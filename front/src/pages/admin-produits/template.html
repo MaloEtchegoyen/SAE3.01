@@ -1,0 +1,20 @@
+<section class="mx-auto max-w-5xl px-6 pt-10 pb-16">
+  <h1 class="mb-6 text-3xl font-bold tracking-tight text-sand-600">Gestion des produits</h1>
+
+  <div class="mb-6">
+    <a
+      href="/admin/produits/nouveau"
+      data-link
+      class="inline-flex items-center justify-center rounded-lg bg-input px-5 py-2.5 text-sm font-medium text-white shadow-xs transition-colors hover:bg-input-hover"
+    >
+      Ajouter un produit
+    </a>
+  </div>
+
+  <div class="mb-6">
+    <slot name="message"></slot>
+  </div>
+
+  <slot name="produits"></slot>
+</section>
+

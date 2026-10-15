@@ -1,0 +1,27 @@
+# Dépendances et build du front : se régénèrent avec npm install et npm run build
+front/node_modules/
+front/dist/
+
+# Fichiers d'environnement des éditeurs et systèmes
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Dossier SQL et scripts de base de données
+sql/
+*.sql
+
+# Configuration serveur et formateur
+.htaccess
+.prettierrc
+
+# Consignes et documentation agents
+AGENTS.md
+.agents/
+
+# Fichiers de gestion de paquets npm
+package.json
+package-lock.json
+**/package*.json

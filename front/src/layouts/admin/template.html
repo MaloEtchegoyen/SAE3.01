@@ -1,0 +1,10 @@
+<div class="grid grid-cols-[auto_1fr] min-h-screen">
+  <aside class="sticky top-0 h-screen shrink-0">
+    <slot name="header"></slot>
+  </aside>
+  <main class="min-w-0 overflow-y-auto">
+    <!-- Le slot sans nom reçoit la page affichée (voir lib/router.js). -->
+    <slot></slot>
+  </main>
+</div>
+

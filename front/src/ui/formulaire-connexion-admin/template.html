@@ -1,0 +1,25 @@
+<section class="mb-6 rounded-lg bg-accent text-default border border-border p-6 shadow-xs dark:border-zinc-800">
+  <h2 class="mb-5 text-base font-semibold tracking-tight">Connexion administrateur</h2>
+
+  <form class="flex flex-col gap-4">
+    <label class="flex flex-col gap-2 text-sm font-medium">
+      Email administrateur
+      <input name="login" type="text" autocomplete="username" value="{{login}}" placeholder="exemple@gmail.com" class="h-9 border-none rounded-md border bg-input px-3 font-normal transition-colors hover:border-input-hover" />
+    </label>
+
+    <label class="flex flex-col gap-2 text-sm font-medium">
+      Mot de passe
+      <input name="mdp" type="password" autocomplete="current-password" placeholder="******" class="h-9 border-none rounded-md border border-border bg-input px-3 font-normal transition-colors hover:border-border" />
+    </label>
+
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class="h-9 rounded-md bg-input px-4 text-sm font-medium text-zinc-50 transition-opacity hover:opacity-90 dark:bg-zinc-50">
+        Accéder au back-office
+      </button>
+      <!-- type « button » et non « submit » : ce bouton n'envoie pas le formulaire. -->
+      <button type="button" data-action="deconnexion" class="h-9 rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-input-hover">
+        Se déconnecter
+      </button>
+    </div>
+  </form>
+</section>
