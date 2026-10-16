@@ -3,6 +3,8 @@ import { navigate } from "../../lib/router.js";
 import { htmlToFragment } from "../../lib/utils.js";
 import { MessageView } from "../../ui/message/index.js";
 import { TableProduitsView } from "../../ui/table-produits/index.js";
+import { FormulaireProduitView } from "../../ui/formulaire-produit/index.js";
+import { ModalConfirmationView } from "../../ui/modal-confirmation/index.js";
 import template from "./template.html?raw";
 
 /**
@@ -11,18 +13,26 @@ import template from "./template.html?raw";
 
 let M = {
   produits: null,
+  categories: [],
+  formulaireOuvert: false,
+  produitEnEdition: null,
   message: null,
+  produitASupprimer: null,
 };
 
 let C = {};
 
 /**
- * Charge les produits depuis le serveur.
+ * Charge les produits et les catégories depuis le serveur.
  */
 C.charger = async function () {
   try {
-    M.produits = await ProductData.fetchAll();
-    M.message = null;
+    const [produits, categories] = await Promise.all([
+      ProductData.fetchAll(),
+      ProductData.fetchCategories().catch(() => []),
+    ]);
+    M.produits = produits;
+    M.categories = categories || [];
   } catch (erreur) {
     M.produits = null;
     let texte = erreur.message;
@@ -33,10 +43,192 @@ C.charger = async function () {
 };
 
 /**
+ * Bascule l'affichage du formulaire d'ajout.
+ */
+C.handler_toggle_formulaire = function () {
+  if (M.formulaireOuvert) {
+    M.formulaireOuvert = false;
+    M.produitEnEdition = null;
+  } else {
+    M.formulaireOuvert = true;
+    M.produitEnEdition = null;
+  }
+  V.rafraichir();
+};
+
+/**
+ * Ouvre le formulaire pré-rempli pour modifier un produit.
+ *
+ * @param {{
+ *   id: number,
+ *   nom: string,
+ *   category_id: number|null,
+ *   categorie?: string,
+ *   prix: number,
+ *   stock: number,
+ *   seuil_alerte: number,
+ *   description?: string|null
+ * }|number} produitOuId
+ */
+C.handler_ouvrir_edition = function (produitOuId) {
+  const produit =
+    typeof produitOuId === "object" && produitOuId !== null
+      ? produitOuId
+      : (M.produits || []).find((p) => p.id === Number(produitOuId));
+
+  if (!produit) return;
+
+  M.produitEnEdition = produit;
+  M.formulaireOuvert = true;
+  M.message = null;
+  V.rafraichir();
+};
+
+/**
+ * Ferme le formulaire et réinitialise l'état d'édition.
+ */
+C.handler_fermer_formulaire = function () {
+  M.formulaireOuvert = false;
+  M.produitEnEdition = null;
+  V.rafraichir();
+};
+
+/**
+ * Soumission du formulaire d'ajout de produit.
+ *
+ * @param {{
+ *   nom: string,
+ *   prix: number,
+ *   category_id: number|null,
+ *   stock: number,
+ *   seuil_alerte: number,
+ *   description: string|null,
+ *   images?: string[],
+ *   image?: string|null
+ * }} donnees
+ */
+C.handler_ajouter_produit = async function (donnees) {
+  try {
+    const donneesProduit = {
+      nom: donnees.nom,
+      prix: donnees.prix,
+      category_id: donnees.category_id,
+      stock: donnees.stock,
+      seuil_alerte: donnees.seuil_alerte,
+      description: donnees.description,
+    };
+    const reponse = await ProductData.create(donneesProduit);
+    M.message = {
+      type: "succes",
+      texte: reponse?.message || "Produit créé avec succès.",
+    };
+    M.formulaireOuvert = false;
+    await C.charger();
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors de la création du produit.",
+    };
+  }
+
+  V.rafraichir();
+};
+
+/**
+ * Demande la confirmation de suppression d'un produit.
+ *
+ * @param {{ id: number, nom: string }} produit
+ */
+C.handler_demander_suppression = function (produit) {
+  M.produitASupprimer = produit;
+  V.rafraichir();
+};
+
+/**
+ * Annule la suppression en cours.
+ */
+C.handler_annuler_suppression = function () {
+  M.produitASupprimer = null;
+  V.rafraichir();
+};
+
+/**
+ * Confirme et effectue la suppression d'un produit.
+ *
+ * @param {number} id
+ */
+C.handler_confirmer_suppression = async function (id) {
+  try {
+    const reponse = await ProductData.delete(id);
+    M.message = {
+      type: "succes",
+      texte: reponse?.message || "Produit supprimé avec succès.",
+    };
+    M.produitASupprimer = null;
+    await C.charger();
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors de la suppression du produit.",
+    };
+    M.produitASupprimer = null;
+  }
+
+  V.rafraichir();
+};
+
+/**
+ * Soumission du formulaire de modification de produit.
+ *
+ * @param {{
+ *   id?: number,
+ *   nom: string,
+ *   prix: number,
+ *   category_id: number|null,
+ *   stock: number,
+ *   seuil_alerte: number,
+ *   description: string|null
+ * }} donnees
+ */
+C.handler_modifier_produit = async function (donnees) {
+  const id = donnees.id || M.produitEnEdition?.id;
+  if (!id) return;
+
+  try {
+    const donneesProduit = {
+      nom: donnees.nom,
+      prix: donnees.prix,
+      category_id: donnees.category_id,
+      stock: donnees.stock,
+      seuil_alerte: donnees.seuil_alerte,
+      description: donnees.description,
+    };
+    const reponse = await ProductData.update(id, donneesProduit);
+    M.message = {
+      type: "succes",
+      texte: reponse?.message || "Produit mis à jour avec succès.",
+    };
+    M.formulaireOuvert = false;
+    M.produitEnEdition = null;
+    await C.charger();
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors de la modification du produit.",
+    };
+  }
+
+  V.rafraichir();
+};
+
+/**
  * Initialisation du contrôleur.
  */
 C.init = async function () {
   M.message = null;
+  M.formulaireOuvert = false;
+  M.produitEnEdition = null;
+  M.produitASupprimer = null;
   await C.charger();
 
   if (M.produits === null) {
@@ -67,6 +259,22 @@ V.rafraichir = function () {
 V.createPageFragment = function () {
   let pageFragment = htmlToFragment(template);
 
+  let btnToggle = pageFragment.querySelector('[data-action="toggle-formulaire"]');
+  if (btnToggle) {
+    btnToggle.textContent =
+      M.formulaireOuvert && !M.produitEnEdition
+        ? "Fermer le formulaire"
+        : "Ajouter un produit";
+    btnToggle.addEventListener("click", () => {
+      if (M.formulaireOuvert && M.produitEnEdition) {
+        M.produitEnEdition = null;
+        V.rafraichir();
+      } else {
+        C.handler_toggle_formulaire();
+      }
+    });
+  }
+
   let slotMessage = pageFragment.querySelector('slot[name="message"]');
   if (slotMessage) {
     if (M.message) {
@@ -76,15 +284,62 @@ V.createPageFragment = function () {
     }
   }
 
+  let slotFormulaire = pageFragment.querySelector('slot[name="formulaire"]');
+  if (slotFormulaire) {
+    if (M.formulaireOuvert) {
+      slotFormulaire.replaceWith(
+        FormulaireProduitView.dom(
+          {
+            categories: M.categories,
+            produit: M.produitEnEdition,
+          },
+          {
+            surSoumission: M.produitEnEdition
+              ? C.handler_modifier_produit
+              : C.handler_ajouter_produit,
+            surAnnulation: C.handler_fermer_formulaire,
+          }
+        )
+      );
+    } else {
+      slotFormulaire.remove();
+    }
+  }
+
   let slotProduits = pageFragment.querySelector('slot[name="produits"]');
   if (slotProduits) {
     slotProduits.replaceWith(
       TableProduitsView.dom(M.produits || [], {
-        onModifier: (id) => {
-          navigate(`/admin/produits/modifier?id=${id}`);
+        onModifier: (produit) => {
+          C.handler_ouvrir_edition(produit);
+        },
+        onSupprimer: (produit) => {
+          C.handler_demander_suppression(produit);
         },
       })
     );
+  }
+
+  let slotModale = pageFragment.querySelector('slot[name="modale"]');
+  if (slotModale) {
+    if (M.produitASupprimer) {
+      slotModale.replaceWith(
+        ModalConfirmationView.dom(
+          {
+            titre: "Confirmer la suppression",
+            message: `Êtes-vous sûr de vouloir supprimer le produit « ${M.produitASupprimer.nom} » ?`,
+            boutonConfirmer: "Supprimer",
+            boutonAnnuler: "Annuler",
+          },
+          {
+            surConfirmer: () => C.handler_confirmer_suppression(M.produitASupprimer.id),
+            surAnnuler: () => C.handler_annuler_suppression(),
+          }
+        )
+      );
+    } else {
+      slotModale.remove();
+    }
   }
 
   return pageFragment;

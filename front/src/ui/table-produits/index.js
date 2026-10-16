@@ -18,7 +18,7 @@ let TableProduitsView = {
    *   seuil_alerte: number,
    *   description?: string|null
    * }>} produits
-   * @param {{ onModifier?: (id: number) => void }} [actions]
+   * @param {{ onModifier?: (id: number) => void, onSupprimer?: (produit: any) => void }} [actions]
    */
   dom: function (produits, actions = {}) {
     if (!produits || produits.length === 0) {
@@ -41,7 +41,14 @@ let TableProduitsView = {
       if (actions.onModifier) {
         let btn = ligneFrag.querySelector('[data-action="modifier"]');
         if (btn) {
-          btn.addEventListener("click", () => actions.onModifier(p.id));
+          btn.addEventListener("click", () => actions.onModifier(p));
+        }
+      }
+
+      if (actions.onSupprimer) {
+        let btnSupprimer = ligneFrag.querySelector('[data-action="supprimer"]');
+        if (btnSupprimer) {
+          btnSupprimer.addEventListener("click", () => actions.onSupprimer(p));
         }
       }
 

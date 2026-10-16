@@ -1,0 +1,31 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+  <div class="bg-accent w-full max-w-md rounded-2xl p-6 text-white shadow-xl ring-1 ring-white/10">
+    <div class="mb-4 flex items-center gap-3">
+      <h3 id="modal-titre" class="text-lg font-bold text-white">
+        {{titre}}
+      </h3>
+    </div>
+
+    <p class="mb-6 text-sm text-white/80 leading-relaxed">
+      {{message}}
+    </p>
+
+    <div class="flex justify-end gap-3">
+      <button
+        type="button"
+        data-action="annuler"
+        class="bg-brand inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+      >
+        {{boutonAnnuler}}
+      </button>
+      <button
+        type="button"
+        data-action="confirmer"
+        class="inline-flex cursor-pointer items-center justify-center rounded-lg bg-input px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-input-hover"
+      >
+        {{boutonConfirmer}}
+      </button>
+    </div>
+  </div>
+</div>
+

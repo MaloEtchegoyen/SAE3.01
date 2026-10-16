@@ -1,15 +1,32 @@
-<header class="sticky top-0 z-10 bg-brand p-8 ">
-  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-6 px-6 py-3">
-    <a href="/" data-link class="text-[0.95rem] font-semibold tracking-tight"><img src="../../../assets/logo/logo-cafe-feuillette-tours.svg" alt=""></a>
+<header class="sticky top-0 z-30 bg-brand">
+  <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3.5 md:px-10">
+    <a href="/" data-link class="flex items-center">
+      <img data-ref="logo" alt="Café Feuillette" class="h-10 w-auto md:h-11">
+    </a>
 
     <!-- Le routeur pose aria-current="page" sur le lien de la page affichée. -->
-    <nav class="mr-auto flex gap-5 text-sm">
-      <a href="/" data-link class="text-zinc-500 transition-colors hover:text-zinc-950 aria-[current=page]:font-medium aria-[current=page]:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50 dark:aria-[current=page]:text-zinc-50">Catalogue</a>
-      <a href="/admin" data-link class="text-zinc-500 transition-colors hover:text-zinc-950 aria-[current=page]:font-medium aria-[current=page]:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50 dark:aria-[current=page]:text-zinc-50">Administration</a>
+    <nav class="flex items-center gap-6 text-[0.95rem] font-normal text-white md:gap-10">
+      <a href="/" data-link class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
+        Catalogue
+      </a>
+      <a href="/compte" data-link class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
+        Mon compte
+      </a>
+      <button type="button" data-action="logout" class="cursor-pointer transition-opacity hover:opacity-80">
+        Se déconnecter
+      </button>
+      <a href="/panier" data-link class="flex items-center gap-2.5 transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m15 11-1 9" />
+          <path d="m19 11-4-7" />
+          <path d="M2 11h20" />
+          <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
+          <path d="m4.5 15.5 15 0" />
+          <path d="m5 11 4-7" />
+          <path d="m9 11 1 9" />
+        </svg>
+        <span>Panier ({{nb}})</span>
+      </a>
     </nav>
-
-    <button type="button" data-action="theme" aria-label="Changer de thème" class="h-8 rounded-md border border-zinc-200 px-3 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800">
-      Thème
-    </button>
   </div>
 </header>
