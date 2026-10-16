@@ -22,5 +22,28 @@ return [
     'POST /api/login'          => [AuthController::class,      'login'],
     'POST /api/logout'         => [AuthController::class,      'logout'],
     'GET  /api/admin/stats'    => [StatsController::class,     'index'],
-    'GET  /api/admin/products' => [ProductController::class,   'index'],
+    // Administration - Produits
+    'GET    /api/admin/products'                   => [ProductController::class, 'index'],
+    'GET    /api/admin/categories'                 => [ProductController::class, 'categories'],
+    'GET    /api/admin/products/detail'            => [ProductController::class, 'detail'],
+    'POST   /api/admin/products'                   => [ProductController::class, 'creer'],
+    'PUT    /api/admin/products'                   => [ProductController::class, 'modifier'],
+    'DELETE /api/admin/products'                   => [ProductController::class, 'supprimer'],
+
+    // Administration - Prix, Stocks et Alertes
+    'PUT    /api/admin/products/stock-prix'        => [ProductController::class, 'fixerPrixEtStock'],
+    'PUT    /api/admin/products/seuil-alerte'      => [ProductController::class, 'modifierSeuilAlerte'],
+    'GET    /api/admin/products/alertes'           => [ProductController::class, 'alertesStock'],
+
+    // Administration - Images
+    'GET    /api/admin/products/images'            => [ProductController::class, 'listerImages'],
+    'POST   /api/admin/products/images'            => [ProductController::class, 'ajouterImage'],
+    'PUT    /api/admin/products/images/principale' => [ProductController::class, 'definirImagePrincipale'],
+    'DELETE /api/admin/products/images'            => [ProductController::class, 'supprimerImage'],
+
+    // Administration - Options & Variantes
+    'GET    /api/admin/products/variantes'         => [ProductController::class, 'listerVariantes'],
+    'POST   /api/admin/products/variantes'         => [ProductController::class, 'ajouterVariante'],
+    'PUT    /api/admin/products/variantes'         => [ProductController::class, 'modifierVariante'],
+    'DELETE /api/admin/products/variantes'         => [ProductController::class, 'supprimerVariante'],
 ];

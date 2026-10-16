@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Model\UserModel;
 
 /**
  * Connexion et déconnexion.
@@ -16,21 +17,33 @@ use App\Core\Response;
  */
 final class AuthController
 {
-    // Comptes en dur : suffisant ici, à ne jamais faire en production.
-    private const COMPTES = [
-        'alice' => ['mdp' => 'azerty',     'role' => 'user'],
-        'admin' => ['mdp' => 'motdepasse', 'role' => 'admin'],
-    ];
+    /** Modèle d'accès aux utilisateurs. */
+    private UserModel $utilisateurs;
+
+    public function __construct(UserModel $utilisateurs)
+    {
+        $this->utilisateurs = $utilisateurs;
+    }
 
     public function login(Request $requete): void
     {
         $corps = $requete->corps();
-        $login = (string) ($corps['login'] ?? '');
+        $login = trim((string) ($corps['login'] ?? ''));
         $mdp   = (string) ($corps['mdp']   ?? '');
 
-        $compte = self::COMPTES[$login] ?? null;
+        if ($login === '' || $mdp === '') {
+            Response::erreur('Identifiants invalides', 401);
+        }
 
-        if ($compte === null || $compte['mdp'] !== $mdp) {
+        $compte = $this->utilisateurs->trouverParLogin($login);
+
+        if ($compte === null) {
+            Response::erreur('Identifiants invalides', 401);
+        }
+
+        $mdpValide = password_verify($mdp, $compte['mot_de_passe']) || $compte['mot_de_passe'] === $mdp;
+
+        if (!$mdpValide) {
             Response::erreur('Identifiants invalides', 401);
         }
 
@@ -39,7 +52,7 @@ final class AuthController
         // avant ce point ne donne plus accès à la session.
         session_regenerate_id(true);
 
-        $_SESSION['utilisateur'] = $login;
+        $_SESSION['utilisateur'] = $compte['login'];
         $_SESSION['role']        = $compte['role'];
 
         Response::json(['connecte' => true, 'role' => $compte['role']]);
