@@ -1,7 +1,8 @@
 import { AuthData } from "../../data/auth.js";
 import { StatsData } from "../../data/stats.js";
+import { navigate } from "../../lib/router.js";
 import { htmlToFragment } from "../../lib/utils.js";
-import { FormulaireConnexionView } from "../../ui/formulaire-connexion/index.js";
+import { FormulaireConnexionAdminView } from "../../ui/formulaire-connexion-admin/index.js";
 import { MessageView } from "../../ui/message/index.js";
 import { StatistiquesView } from "../../ui/statistiques/index.js";
 import template from "./template.html?raw";
@@ -71,6 +72,10 @@ C.handler_deconnexion = async function () {
 C.init = async function () {
   M.message = null;
   await C.chargerStats();
+  if (M.stats === null) {
+    navigate("/connexion-admin");
+    return document.createDocumentFragment();
+  }
   return V.init();
 };
 
@@ -96,20 +101,28 @@ V.rafraichir = function () {
 V.createPageFragment = function () {
   let pageFragment = htmlToFragment(template);
 
-  pageFragment.querySelector('slot[name="connexion"]').replaceWith(
-    FormulaireConnexionView.dom(
-      { login: M.login },
-      { surConnexion: C.handler_connexion, surDeconnexion: C.handler_deconnexion }
-    )
-  );
+  let slotConnexion = pageFragment.querySelector('slot[name="connexion"]');
+  if (slotConnexion) {
+    slotConnexion.replaceWith(
+      FormulaireConnexionAdminView.dom(
+        { login: M.login },
+        { surConnexion: C.handler_connexion, surDeconnexion: C.handler_deconnexion }
+      )
+    );
+  }
 
-  pageFragment.querySelector('slot[name="message"]').replaceWith(MessageView.dom(M.message));
+  let slotMessage = pageFragment.querySelector('slot[name="message"]');
+  if (slotMessage) {
+    slotMessage.replaceWith(MessageView.dom(M.message));
+  }
 
   let slotStats = pageFragment.querySelector('slot[name="statistiques"]');
-  if (M.stats === null) {
-    slotStats.remove();
-  } else {
-    slotStats.replaceWith(StatistiquesView.dom(M.stats));
+  if (slotStats) {
+    if (M.stats === null) {
+      slotStats.remove();
+    } else {
+      slotStats.replaceWith(StatistiquesView.dom(M.stats));
+    }
   }
 
   return pageFragment;

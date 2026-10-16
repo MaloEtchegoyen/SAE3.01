@@ -1,0 +1,23 @@
+<header class="flex h-full w-64 flex-col justify-between border-r border-zinc-200 bg-brand p-6 dark:border-zinc-800">
+  <div class="flex flex-col gap-6">
+    <a href="/" data-link class="text-[0.95rem] font-semibold tracking-tight">
+      <img src="../../../assets/logo/logo-cafe-feuillette-tours.svg" alt="Café Feuillette" class="h-10 w-auto">
+    </a>
+
+    <!-- Le routeur pose aria-current="page" sur le lien de la page affichée. -->
+    <nav class="flex flex-col w-full gap-2 text-sm font-medium">
+      <a href="/admin" data-link class="rounded-md px-3 py-2 text-default transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 aria-[current=page]:bg-zinc-100 aria-[current=page]:text-zinc-950 dark:aria-[current=page]:bg-zinc-800 dark:aria-[current=page]:text-zinc-50">
+        Accueil
+      </a>
+      <a href="/admin/produits" data-link class="rounded-md px-3 py-2 text-default transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 aria-[current=page]:bg-zinc-100 aria-[current=page]:text-zinc-950 dark:aria-[current=page]:bg-zinc-800 dark:aria-[current=page]:text-zinc-50">
+        Produits
+      </a>
+    </nav>
+  </div>
+
+  <div>
+    <button type="button" data-action="theme" aria-label="Changer de thème" class="flex h-9 w-full items-center justify-center rounded-md border border-zinc-200 px-3 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800">
+      Thème
+    </button>
+  </div>
+</header>

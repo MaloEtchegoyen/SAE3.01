@@ -11,8 +11,11 @@
  * Le routeur ajoute lui-même ce chemin (l'option base) aux adresses : c'est le
  * « basename » de react-router.
  */
+let currentRouter = null;
+
 class Router {
   constructor(id, options = {}) {
+    currentRouter = this;
     this.root = document.getElementById(id);
     this.routes = [];
     this.layouts = {};
@@ -193,4 +196,10 @@ class Router {
   }
 }
 
-export { Router };
+function navigate(path) {
+  if (currentRouter) {
+    currentRouter.navigate(path);
+  }
+}
+
+export { Router, navigate };

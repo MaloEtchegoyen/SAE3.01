@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+@theme inline {
+  /* Variables Sémantiques (Surface) */
+  --color-default: var(--color-white);
+  --color-brand: var(--color-sage-500);
+  --color-accent: var(--color-sand-500);
+  --color-strong: var(--color-sage-800);
+  --color-subtle: var(--color-neutral-50);
+  --color-input: var(--color-sand-600);
+  --color-input-hover: var(--color-sand-700);
+  --color-disabled: var(--color-neutral-100);
+  --color-action-hover: var(--color-sand-50);
+  --color-action-disabled: var(--color-neutral-200);
+
+  /* Variables Sémantiques (Content) */
+  --color-content-primary: var(--color-neutral-950);
+  --color-content-secondary: var(--color-neutral-700);
+  --color-content-muted: var(--color-neutral-500);
+  --color-content-accent: var(--color-gold-500);
+  --color-content-inverse: var(--color-white);
+  --color-content-strong: var(--color-black);
+  --color-content-disabled: var(--color-neutral-400);
+  --color-content-action: var(--color-sand-600);
+
+  /* Variables Sémantiques (Border & Interaction) */
+  --color-border: var(--color-neutral-200);
+  
+  --color-interaction-emphasis: var(--color-sage-800);
+
+  --background-image-desktop : var(--back-desktop);
+}
+
 /*
   Le thème sombre s'active par la classe theme-dark posée sur <html> (voir
   index.html et lib/theme.js), et non par le réglage du système : c'est ce que
@@ -30,6 +61,33 @@
 }
 
 @layer base {
+
+  :root {
+    /* Primitive Tokens */
+    --color-white: oklch(100% 0 0);
+    --color-black: oklch(0% 0 0);
+    
+    --color-sage-500: oklch(73.79% 0.0532 122.30);
+    --color-sage-800: oklch(51.20% 0.0332 122.56);
+    
+    --color-sand-50: oklch(97.95% 0.0098 87.47);
+    --color-sand-500: oklch(74.89% 0.0789 84.48);
+    --color-sand-600: oklch(65.91% 0.0790 83.80);
+    --color-sand-700: oklch(56.61% 0.0732 81.71);
+    
+    --color-neutral-50: oklch(98.48% 0.0013 106.42);
+    --color-neutral-100: oklch(96.66% 0.0026 106.45);
+    --color-neutral-200: oklch(92.38% 0.0054 106.50);
+    --color-neutral-400: oklch(74.79% 0.0141 106.73);
+    --color-neutral-500: oklch(61.31% 0.0177 106.91);
+    --color-neutral-700: oklch(41.76% 0.0129 106.95);
+    --color-neutral-950: oklch(23.00% 0.0038 106.69);
+    
+    --color-gold-500: oklch(74.78% 0.0796 85.64);
+
+    --back-desktop: linear-gradient(oklch(54.171% 0.00006 271.152 / 0.45), oklch(54.171% 0.00006 271.152 / 0.45)), url('../assets/back/cafeFeuillette-desktop.jpg');
+  }
+  
   /* Menus déroulants et barres de défilement natifs, eux aussi en sombre. */
   .theme-dark {
     color-scheme: dark;
@@ -45,4 +103,11 @@
   button:not(:disabled) {
     cursor: pointer;
   }
+
+
+
+
+
+  
 }
+

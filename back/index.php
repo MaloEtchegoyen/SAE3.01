@@ -18,8 +18,10 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Controller\AuthController;
 use App\Controller\CatalogueController;
+use App\Controller\ProductController;
 use App\Controller\StatsController;
 use App\Model\FilmModel;
+use App\Model\ProductModel;
 
 // --- Chargement automatique des classes ------------------------------------
 // App\Core\Router  ->  back/src/Core/Router.php
@@ -62,7 +64,8 @@ try {
     $controleurs = [
         CatalogueController::class => new CatalogueController(new FilmModel($pdo), $config['chemin']),
         AuthController::class      => new AuthController(),
-        StatsController::class     => new StatsController(new FilmModel($pdo)),
+        StatsController::class     => new StatsController(new ProductModel($pdo)),
+        ProductController::class   => new ProductController(new ProductModel($pdo)),
     ];
 
     $routes = require __DIR__ . '/src/routes.php';

@@ -36,3 +36,14 @@ export function teinteDepuisTexte(texte) {
 
   return somme % 360;
 }
+
+/**
+ * 12.5 -> « 12,50 € »
+ *
+ * @param {number|string} montant
+ * @returns {string}
+ */
+export function formaterPrix(montant) {
+  const nombre = Number(montant);
+  return Number.isNaN(nombre) ? "0,00 €" : `${nombre.toFixed(2).replace(".", ",")} €`;
+}
