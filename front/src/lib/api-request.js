@@ -67,4 +67,34 @@ let postRequest = function (uri, data = {}) {
   });
 };
 
-export { getRequest, postRequest, ErreurApi };
+/**
+ * Mise à jour d'une ressource au format JSON. Par exemple :
+ * await putRequest("admin/products?id=42", { nom: "Nouveau nom" })
+ */
+let putRequest = function (uri, data = {}) {
+  return request(uri, {
+    method: "PUT",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+};
+
+/**
+ * Suppression d'une ressource au format JSON. Par exemple :
+ * await deleteRequest("admin/products", { id: 42 })
+ */
+let deleteRequest = function (uri, data = {}) {
+  let options = {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+  };
+
+  if (data && Object.keys(data).length > 0) {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(data);
+  }
+
+  return request(uri, options);
+};
+
+export { getRequest, postRequest, putRequest, deleteRequest, ErreurApi };

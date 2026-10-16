@@ -13,15 +13,7 @@ Thumbs.db
 sql/
 *.sql
 
-# Configuration serveur et formateur
-.htaccess
-.prettierrc
-
 # Consignes et documentation agents
 AGENTS.md
-.agents/
+agents/
 
-# Fichiers de gestion de paquets npm
-package.json
-package-lock.json
-**/package*.json

@@ -1,0 +1,38 @@
+<article data-id="{{id}}" data-stock="{{code_stock}}" class="group relative flex h-72 w-full flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200/20 bg-neutral-900 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+  <!-- Image en fond -->
+  <img
+    data-ref="image"
+    src="{{image_url}}"
+    alt="{{nom}}"
+    class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+    loading="lazy"
+  />
+
+  <!-- Voile assombrissant dégradé pour garantir la lisibilité -->
+  <div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/20 transition-opacity duration-300 group-hover:opacity-90"></div>
+
+  <!-- En-tête : Badge d'état de stock -->
+  <div class="relative z-10 flex items-start justify-end p-4">
+    <span
+      data-ref="badge-stock"
+      class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide shadow-xs {{classe_stock}}"
+    >
+      {{etat_stock}}
+    </span>
+  </div>
+
+  <!-- Pied de carte : Nom du produit et Prix -->
+  <div class="relative z-10 flex flex-col justify-end p-4">
+    <h3 class="mb-2 text-lg font-bold leading-snug tracking-tight text-white drop-shadow-sm line-clamp-2">
+      {{nom}}
+    </h3>
+
+    <div class="flex items-baseline justify-between border-t border-white/20 pt-2.5 text-white">
+      <span class="text-xs font-medium text-white/70">Prix unitaire</span>
+      <span class="text-xl font-extrabold tracking-tight text-white drop-shadow-sm">
+        {{prix}}
+      </span>
+    </div>
+  </div>
+</article>
+
