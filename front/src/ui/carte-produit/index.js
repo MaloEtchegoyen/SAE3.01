@@ -91,7 +91,7 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
   if (quantite <= 0) {
     return {
       texte: "Épuisé",
-      classes: "bg-red-600 text-white",
+      classes: "bg-content-secondary text-white",
       code: "epuise",
     };
   }
@@ -99,7 +99,7 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
   if (quantite <= seuil) {
     return {
       texte: "Bientôt épuisé",
-      classes: "bg-amber-600 text-default",
+      classes: "bg-strong text-default",
       code: "bientot-epuise",
     };
   }
