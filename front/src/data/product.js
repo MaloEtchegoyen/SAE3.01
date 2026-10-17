@@ -3,6 +3,35 @@ import { getRequest, postRequest, putRequest, deleteRequest } from "../lib/api-r
 let ProductData = {};
 
 /**
+ * Récupère la liste de tous les produits pour le catalogue public :
+ * GET /api/products.
+ *
+ * @returns {Promise<Array<{
+ *   id: number,
+ *   nom: string,
+ *   category_id: number|null,
+ *   categorie: string,
+ *   prix: number,
+ *   stock: number,
+ *   seuil_alerte: number,
+ *   description: string|null
+ * }>>}
+ */
+ProductData.fetchAll = async function () {
+  return getRequest("products");
+};
+
+/**
+ * Récupère la liste de toutes les catégories pour le catalogue public :
+ * GET /api/categories.
+ *
+ * @returns {Promise<Array<{ id: number, nom: string }>>}
+ */
+ProductData.fetchCategories = async function () {
+  return getRequest("categories");
+};
+
+/**
  * Récupère la liste de tous les produits pour l'administration :
  * GET /api/admin/products (réservé aux administrateurs).
  *
@@ -17,17 +46,17 @@ let ProductData = {};
  *   description: string|null
  * }>>}
  */
-ProductData.fetchAll = async function () {
+ProductData.fetchAllAdmin = async function () {
   return getRequest("admin/products");
 };
 
 /**
- * Récupère la liste de toutes les catégories :
- * GET /api/admin/categories.
+ * Récupère la liste de toutes les catégories pour l'administration :
+ * GET /api/admin/categories (réservé aux administrateurs).
  *
  * @returns {Promise<Array<{ id: number, nom: string }>>}
  */
-ProductData.fetchCategories = async function () {
+ProductData.fetchCategoriesAdmin = async function () {
   return getRequest("admin/categories");
 };
 

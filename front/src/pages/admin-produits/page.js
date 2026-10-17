@@ -28,8 +28,8 @@ let C = {};
 C.charger = async function () {
   try {
     const [produits, categories] = await Promise.all([
-      ProductData.fetchAll(),
-      ProductData.fetchCategories().catch(() => []),
+      ProductData.fetchAllAdmin(),
+      ProductData.fetchCategoriesAdmin().catch(() => []),
     ]);
     M.produits = produits;
     M.categories = categories || [];

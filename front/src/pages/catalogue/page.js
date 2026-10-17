@@ -1,6 +1,6 @@
 import { ProductData } from "../../data/product.js";
 import { htmlToFragment } from "../../lib/utils.js";
-import { GrilleFilmsView } from "../../ui/grille-films/index.js";
+import { GrilleProduitsView } from "../../ui/grille-produits/index.js";
 import { MessageView } from "../../ui/message/index.js";
 import template from "./template.html?raw";
 
@@ -26,11 +26,10 @@ C.charger = async function () {
     M.message = null;
   } catch (erreur) {
     M.produits = null;
-    let texte = `Impossible de charger le catalogue : ${erreur.message}`;
-    if (erreur.statut === 401 || erreur.statut === 403) {
-      texte = "Le catalogue des produits requiert une connexion (accès API restreint).";
-    }
-    M.message = { type: "erreur", texte };
+    M.message = {
+      type: "erreur",
+      texte: `Impossible de charger le catalogue : ${erreur.message}`,
+    };
   }
 };
 
@@ -71,7 +70,7 @@ V.createPageFragment = function () {
   let slotBarre = pageFragment.querySelector('slot[name="barre-outils"]');
   if (slotBarre) slotBarre.remove();
 
-  pageFragment.querySelector('slot[name="grille"]').replaceWith(GrilleFilmsView.dom(M.produits));
+  pageFragment.querySelector('slot[name="grille"]').replaceWith(GrilleProduitsView.dom(M.produits));
 
   let slotPagination = pageFragment.querySelector('slot[name="pagination"]');
   if (slotPagination) slotPagination.remove();

@@ -33,6 +33,43 @@ final class ProductController
     }
 
     /**
+     * Liste publique des produits du catalogue en JSON (accessible à tous).
+     */
+    public function catalogue(?Request $requete = null): void
+    {
+        Response::json($this->produits->lister());
+    }
+
+    /**
+     * Liste publique des catégories en JSON (accessible à tous).
+     */
+    public function catalogueCategories(?Request $requete = null): void
+    {
+        Response::json($this->produits->listerCategories());
+    }
+
+    /**
+     * Détail public d'un produit avec ses images et ses options/variantes.
+     */
+    public function catalogueDetail(Request $requete): void
+    {
+        $id = (int) ($requete->parametre('id') ?? 0);
+        if ($id <= 0) {
+            Response::erreur('Identifiant de produit invalide ou manquant', 400);
+        }
+
+        $produit = $this->produits->trouverParId($id);
+        if ($produit === null) {
+            Response::erreur('Produit introuvable', 404);
+        }
+
+        $produit['images']    = $this->produits->listerImages($id);
+        $produit['variantes'] = $this->produits->listerVariantes($id);
+
+        Response::json($produit);
+    }
+
+    /**
      * Liste des produits en JSON pour les administrateurs.
      */
     public function index(?Request $requete = null): void
