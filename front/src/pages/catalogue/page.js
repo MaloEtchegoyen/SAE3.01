@@ -1,5 +1,7 @@
 import { ProductData } from "../../data/product.js";
 import { htmlToFragment } from "../../lib/utils.js";
+import { slugifier } from "../../lib/format.js";
+import { navigate } from "../../lib/router.js";
 import { BarreOutilsView } from "../../ui/barre-outils/index.js";
 import { GrilleProduitsView } from "../../ui/grille-produits/index.js";
 import { MessageView } from "../../ui/message/index.js";
@@ -15,6 +17,7 @@ let M = {
   produits: null,
   categories: [],
   categorieActive: null,
+  slugActif: null,
   message: null,
 };
 
@@ -31,10 +34,15 @@ C.charger = async function () {
     ]);
 
     M.produits = produits;
-    M.categories =
+    const categoriesBrutes =
       Array.isArray(categories) && categories.length > 0
         ? categories
         : C.extraireCategories(produits);
+
+    M.categories = categoriesBrutes.map((cat) => ({
+      ...cat,
+      slug: cat.slug || slugifier(cat.nom),
+    }));
     M.message = null;
   } catch (erreur) {
     M.produits = null;
@@ -50,7 +58,7 @@ C.charger = async function () {
  * Extrait la liste des catégories uniques à partir des produits (secours si l'API catégories est indisponible).
  *
  * @param {Array<object>|null} produits
- * @returns {Array<{ id: number, nom: string }>}
+ * @returns {Array<{ id: number, nom: string, slug: string }>}
  */
 C.extraireCategories = function (produits) {
   if (!Array.isArray(produits)) return [];
@@ -61,6 +69,7 @@ C.extraireCategories = function (produits) {
       mapCategories.set(p.category_id, {
         id: p.category_id,
         nom: p.categorie,
+        slug: slugifier(p.categorie),
       });
     }
   }
@@ -85,18 +94,120 @@ C.obtenirProduitsFiltres = function () {
 };
 
 /**
- * Action utilisateur : filtrer par catégorie.
+ * Lit la catégorie active à partir des paramètres d'URL (?categorie=X).
  *
- * @param {number|null} idCategorie
+ * @returns {number|null}
  */
-C.handler_filtrer_categorie = function (idCategorie) {
-  M.categorieActive = idCategorie;
-  V.rafraichir();
+C.lireCategorieDepuisUrl = function () {
+  const params = new URLSearchParams(window.location.search);
+  const cat = params.get("categorie");
+  return cat !== null && cat !== "" ? Number(cat) : null;
 };
 
-C.init = async function () {
-  M.categorieActive = null;
-  await C.charger();
+/**
+ * Applique le filtre de catégorie en fonction des paramètres de route (/categorie/:slug)
+ * ou, à défaut, des paramètres d'URL classiques (?categorie=X).
+ *
+ * @param {{ slug?: string }} params
+ */
+C.appliquerParametres = function (params = {}) {
+  let slug = params?.slug;
+
+  // Rétrocompatibilité : si aucun slug dans l'URL propre, regarder les query params
+  if (!slug) {
+    const catQuery = C.lireCategorieDepuisUrl();
+    if (catQuery !== null) {
+      slug = String(catQuery);
+    }
+  }
+
+  if (slug) {
+    const cat = M.categories.find(
+      (c) =>
+        (c.slug && c.slug === slug) ||
+        slugifier(c.nom) === slug ||
+        String(c.id) === String(slug)
+    );
+
+    if (cat) {
+      M.categorieActive = cat.id;
+      M.slugActif = cat.slug || slugifier(cat.nom);
+      M.message = null;
+    } else {
+      M.categorieActive = -1;
+      M.slugActif = slug;
+      M.message = {
+        type: "info",
+        texte: `La catégorie « ${slug} » n'existe pas ou ne contient aucun produit.`,
+      };
+    }
+  } else {
+    M.categorieActive = null;
+    M.slugActif = null;
+    M.message = null;
+  }
+};
+
+/**
+ * Met à jour l'URL sans recharger la page pour refléter la catégorie sélectionnée sous forme propre (/categorie/slug).
+ *
+ * @param {string|null} slug
+ */
+C.synchroniserUrl = function (slug) {
+  const cible = slug ? `/categorie/${slug}` : "/";
+  navigate(cible);
+};
+
+/**
+ * Calcule pour chaque catégorie son nombre de produits associés.
+ *
+ * @returns {Array<{ id: number, nom: string, slug: string, nbProduits: number }>}
+ */
+C.obtenirCategoriesAvecCompteurs = function () {
+  if (!Array.isArray(M.produits)) return [];
+  const compteurs = new Map();
+
+  for (const p of M.produits) {
+    const catId = Number(p.category_id);
+    if (!Number.isNaN(catId)) {
+      compteurs.set(catId, (compteurs.get(catId) || 0) + 1);
+    }
+  }
+
+  return M.categories.map((cat) => ({
+    ...cat,
+    slug: cat.slug || slugifier(cat.nom),
+    nbProduits: compteurs.get(Number(cat.id)) || 0,
+  }));
+};
+
+/**
+ * Action utilisateur : filtrer par catégorie et synchroniser l'URL propre.
+ *
+ * @param {number|null} idCategorie
+ * @param {string|null} [slug=null]
+ */
+C.handler_filtrer_categorie = function (idCategorie, slug = null) {
+  if (idCategorie === null || idCategorie === undefined) {
+    C.synchroniserUrl(null);
+    return;
+  }
+
+  if (!slug) {
+    const cat = M.categories.find((c) => Number(c.id) === Number(idCategorie));
+    slug = cat ? cat.slug : String(idCategorie);
+  }
+
+  C.synchroniserUrl(slug);
+};
+
+C.init = async function (params = {}) {
+  if (M.produits === null) {
+    await C.charger();
+  }
+
+  C.appliquerParametres(params);
+
   return V.init();
 };
 
@@ -113,8 +224,10 @@ V.init = function () {
 V.rafraichir = function () {
   let fragment = V.createPageFragment();
   let nouvelleRacine = fragment.firstElementChild;
-  V.racine.replaceWith(fragment);
-  V.racine = nouvelleRacine;
+  if (V.racine && V.racine.parentNode) {
+    V.racine.replaceWith(fragment);
+    V.racine = nouvelleRacine;
+  }
 };
 
 V.createPageFragment = function () {
@@ -130,18 +243,26 @@ V.createPageFragment = function () {
   }
 
   let produitsFiltres = C.obtenirProduitsFiltres();
+  let categoriesAvecCompteurs = C.obtenirCategoriesAvecCompteurs();
+  let categorieActiveObj = M.categories.find(
+    (c) => Number(c.id) === Number(M.categorieActive)
+  );
+  let arianeActif = categorieActiveObj ? categorieActiveObj.nom : "Tous les produits";
 
   let slotBarre = pageFragment.querySelector('slot[name="barre-outils"]');
   if (slotBarre) {
     slotBarre.replaceWith(
       BarreOutilsView.dom(
         {
-          categories: M.categories,
+          categories: categoriesAvecCompteurs,
           categorieActive: M.categorieActive,
+          slugActif: M.slugActif,
+          arianeActif: arianeActif,
+          totalGeneral: M.produits.length,
           total: produitsFiltres.length,
         },
         {
-          surChangementCategorie: (id) => C.handler_filtrer_categorie(id),
+          surChangementCategorie: (id, slug) => C.handler_filtrer_categorie(id, slug),
         }
       )
     );
@@ -157,6 +278,6 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
-export function CataloguePage() {
-  return C.init();
+export function CataloguePage(params = {}) {
+  return C.init(params);
 }
