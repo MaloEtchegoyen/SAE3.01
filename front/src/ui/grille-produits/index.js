@@ -5,7 +5,7 @@ import templateVide from "./vide.html?raw";
 
 // Grille de cartes. Elle compose CarteProduitView : les
 // cartes prennent la place du <slot name="cartes">.
-let GrilleFilmsView = {
+let GrilleProduitsView = {
   dom: function (produits = [], actions = {}) {
     if (!produits || produits.length === 0) {
       return htmlToFragment(templateVide);
@@ -18,4 +18,4 @@ let GrilleFilmsView = {
   },
 };
 
-export { GrilleFilmsView };
+export { GrilleProduitsView };

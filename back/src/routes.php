@@ -22,6 +22,11 @@ return [
     'POST /api/login'          => [AuthController::class,      'login'],
     'POST /api/logout'         => [AuthController::class,      'logout'],
     'GET  /api/admin/stats'    => [StatsController::class,     'index'],
+    // Catalogue public (accessible à tous)
+    'GET    /api/products'                         => [ProductController::class, 'catalogue'],
+    'GET    /api/categories'                       => [ProductController::class, 'catalogueCategories'],
+    'GET    /api/products/detail'                  => [ProductController::class, 'catalogueDetail'],
+
     // Administration - Produits
     'GET    /api/admin/products'                   => [ProductController::class, 'index'],
     'GET    /api/admin/categories'                 => [ProductController::class, 'categories'],
