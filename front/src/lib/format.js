@@ -65,6 +65,7 @@ export function slugifier(texte) {
     .replaceAll("è", "e")
     .replaceAll("ê", "e")
     .replaceAll("à", "a")
+    .replaceAll("â", "a")
     .replaceAll("ç", "c")
     .replaceAll("ô", "o")
     .replaceAll("î", "i")
