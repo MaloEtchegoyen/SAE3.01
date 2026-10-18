@@ -14,6 +14,8 @@ router.addLayout("/", RootLayout);
 router.addLayout("/admin", AdminLayout);
 
 router.addRoute("/", CataloguePage);
+router.addRoute("/categorie", CataloguePage);
+router.addRoute("/categorie/:slug", CataloguePage);
 router.addRoute("/connexion-admin", ConnexionAdminPage, { useLayout: false });
 router.addRoute("/admin", AdminPage);
 router.addRoute("/admin/produits", AdminProduitsPage);
