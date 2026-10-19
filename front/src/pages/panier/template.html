@@ -1,0 +1,17 @@
+<section class="mx-auto max-w-7xl px-6 pt-8 pb-16 md:px-10">
+  <h1 class="mb-8 text-3xl font-bold tracking-tight text-[#b89563]">
+    Mon panier
+  </h1>
+
+  <slot name="message"></slot>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    <div class="lg:col-span-2">
+      <slot name="liste-panier"></slot>
+    </div>
+    <div class="lg:col-span-1">
+      <slot name="recapitulatif"></slot>
+    </div>
+  </div>
+</section>
+
