@@ -12,16 +12,18 @@ import template from "./template.html?raw";
  */
 let HeaderView = {
   html: function (data = {}) {
-    return template.replace('data-ref="logo"', `data-ref="logo" src="${logoUrl}"`);
+    const nb = data.nbArticles ?? data.nb ?? 0;
+    return template
+      .replace("{{nb}}", String(nb))
+      .replace('data-ref="logo"', `data-ref="logo" src="${logoUrl}"`);
   },
 
   dom: function (data = {}, actions = {}) {
-    let fragment = htmlToFragment(template);
-
-    let imgLogo = fragment.querySelector('[data-ref="logo"]');
-    if (imgLogo) {
-      imgLogo.src = logoUrl;
-    }
+    const nb = data.nbArticles ?? data.nb ?? 0;
+    const html = template
+      .replace("{{nb}}", String(nb))
+      .replace('data-ref="logo"', `data-ref="logo" src="${logoUrl}"`);
+    let fragment = htmlToFragment(html);
 
     let btnLogout = fragment.querySelector('[data-action="logout"]');
     if (btnLogout && typeof actions?.onLogout === "function") {

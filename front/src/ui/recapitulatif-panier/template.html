@@ -1,0 +1,55 @@
+<div class="flex flex-col gap-6">
+  <!-- Bloc Récapitulatif doré conforme à la maquette -->
+  <div class="rounded-2xl bg-[#c29b63] p-6 text-white shadow-sm flex flex-col">
+    <h2 class="text-xl font-bold tracking-tight mb-2 text-white">
+      Récapitulatif
+    </h2>
+    <p class="text-sm font-medium text-white/90 mb-4">
+      {{nb_produits}}
+    </p>
+
+    <div class="border-t border-white/30 my-2"></div>
+
+    <div class="flex items-baseline justify-between py-2">
+      <span class="text-base font-semibold text-white">Total</span>
+      <span class="text-2xl font-extrabold tracking-tight text-white">
+        {{total}}
+      </span>
+    </div>
+
+    <p class="text-xs text-white/80 mt-1 mb-6">
+      Retrait au café
+    </p>
+
+    <button
+      type="button"
+      data-action="valider-panier"
+      class="w-full rounded-xl bg-[#8f6b39] hover:bg-[#7a592c] py-3.5 px-4 text-center font-medium text-white shadow-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      {{disabled_si_vide}}
+    >
+      Valider mon panier
+    </button>
+  </div>
+
+  <!-- Bloc Code promo conforme à la maquette -->
+  <div class="flex flex-col gap-2">
+    <h3 class="text-sm font-bold text-content-primary">
+      Code promo
+    </h3>
+    <form data-ref="form-code-promo" class="flex gap-2">
+      <input
+        type="text"
+        name="code"
+        placeholder="Placeholder"
+        class="flex-1 rounded-xl bg-[#98a38c] px-4 py-2.5 text-sm text-white placeholder-white/70 focus:outline-hidden focus:ring-2 focus:ring-brand"
+      />
+      <button
+        type="submit"
+        class="rounded-xl bg-[#b89563] hover:bg-[#a58250] px-5 py-2.5 text-sm font-medium text-white shadow-xs transition cursor-pointer"
+      >
+        Appliquer
+      </button>
+    </form>
+  </div>
+</div>
+

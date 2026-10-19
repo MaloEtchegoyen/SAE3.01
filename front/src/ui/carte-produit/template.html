@@ -24,7 +24,13 @@
       </span>
   </div>
     <div class="relative justify-between z-10 flex px-4 pb-4">
-      <button class="text-center px-5 p-2 rounded-md bg-input hover:bg-input-hover">Ajouter au panier</button>
+      <a
+        href="/produit/{{slug}}"
+        data-link
+        class="text-center px-5 p-2 rounded-md bg-input hover:bg-input-hover text-white text-sm font-medium transition cursor-pointer"
+      >
+        Plus de détails
+      </a>
     <span
       data-ref="badge-stock"
       data-stock="{{code_stock}}"

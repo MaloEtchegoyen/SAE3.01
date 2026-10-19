@@ -1,4 +1,5 @@
 import { ProductData } from "../../data/product.js";
+import { CartData } from "../../data/cart.js";
 import { htmlToFragment, genericRenderer } from "../../lib/utils.js";
 import { slugifier } from "../../lib/format.js";
 import { GalerieProduitView } from "../../ui/galerie-produit/index.js";
@@ -40,7 +41,7 @@ C.charger = async function (slugOuId) {
 
     M.produit = produit;
     M.varianteActive = null;
-    M.quantite = 0;
+    M.quantite = Number(produit.stock ?? 0) > 0 ? 1 : 0;
     M.indexImage = 0;
     M.message = null;
 
@@ -144,11 +145,29 @@ C.handler_choisir_variante = function (variante) {
 };
 
 C.handler_ajouter_panier = function (produit, quantite, variante) {
-  const nomProduit = variante ? `${produit.nom} (${variante.nom})` : produit.nom;
-  M.message = {
-    type: "succes",
-    texte: `${quantite} × « ${nomProduit} » ajouté(s) à votre panier avec succès !`,
-  };
+  const qte = Number(quantite || M.quantite || 1);
+  if (qte <= 0) {
+    M.message = {
+      type: "erreur",
+      texte: "Veuillez sélectionner au moins 1 produit.",
+    };
+    V.rafraichir();
+    return;
+  }
+
+  try {
+    CartData.ajouterArticle({ produit, quantite: qte, variante });
+    const nomProduit = variante ? `${produit.nom} (${variante.nom})` : produit.nom;
+    M.message = {
+      type: "succes",
+      texte: `${qte} × « ${nomProduit} » ajouté(s) à votre panier avec succès !`,
+    };
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: `Impossible d'ajouter au panier : ${erreur.message}`,
+    };
+  }
   V.rafraichir();
 };
 
