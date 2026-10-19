@@ -56,27 +56,44 @@ let getRequest = function (uri) {
 };
 
 /**
- * Envoi de données au format JSON. Par exemple :
+ * Envoi de données au format JSON ou multipart/form-data. Par exemple :
  * await postRequest("login", { login: "alice", mdp: "azerty" })
+ * ou await postRequest("admin/products", formData)
  */
 let postRequest = function (uri, data = {}) {
-  return request(uri, {
+  let options = {
     method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+    headers: { Accept: "application/json" },
+  };
+
+  if (typeof FormData !== "undefined" && data instanceof FormData) {
+    options.body = data;
+  } else {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(data);
+  }
+
+  return request(uri, options);
 };
 
 /**
- * Mise à jour d'une ressource au format JSON. Par exemple :
+ * Mise à jour d'une ressource au format JSON ou multipart/form-data. Par exemple :
  * await putRequest("admin/products?id=42", { nom: "Nouveau nom" })
  */
 let putRequest = function (uri, data = {}) {
-  return request(uri, {
+  let options = {
     method: "PUT",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+    headers: { Accept: "application/json" },
+  };
+
+  if (typeof FormData !== "undefined" && data instanceof FormData) {
+    options.body = data;
+  } else {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(data);
+  }
+
+  return request(uri, options);
 };
 
 /**

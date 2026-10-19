@@ -32,6 +32,17 @@ ProductData.fetchCategories = async function () {
 };
 
 /**
+ * Récupère le détail d'un produit (avec images et variantes) pour le catalogue public :
+ * GET /api/products/detail?id=...
+ *
+ * @param {number} id
+ * @returns {Promise<object>}
+ */
+ProductData.fetchDetail = async function (id) {
+  return getRequest(`products/detail?id=${id}`);
+};
+
+/**
  * Récupère la liste de tous les produits pour l'administration :
  * GET /api/admin/products (réservé aux administrateurs).
  *
@@ -61,7 +72,18 @@ ProductData.fetchCategoriesAdmin = async function () {
 };
 
 /**
- * Crée un nouveau produit :
+ * Récupère le détail complet d'un produit (avec images et variantes) pour l'administration :
+ * GET /api/admin/products/detail?id=... (réservé aux administrateurs).
+ *
+ * @param {number} id
+ * @returns {Promise<object>}
+ */
+ProductData.fetchDetailAdmin = async function (id) {
+  return getRequest(`admin/products/detail?id=${id}`);
+};
+
+/**
+ * Crée un nouveau produit (avec éventuel téléversement d'images) :
  * POST /api/admin/products.
  *
  * @param {{
@@ -70,17 +92,43 @@ ProductData.fetchCategoriesAdmin = async function () {
  *   category_id?: number|null,
  *   stock?: number,
  *   seuil_alerte?: number,
- *   description?: string|null
- * }} donnees
+ *   description?: string|null,
+ *   fichiers?: File[]
+ * }|FormData} donnees
  * @returns {Promise<{ succes: boolean, id: number, message: string }>}
  */
 ProductData.create = async function (donnees) {
+  if (typeof FormData !== "undefined" && donnees instanceof FormData) {
+    return postRequest("admin/products", donnees);
+  }
+
+  if (Array.isArray(donnees?.fichiers) && donnees.fichiers.length > 0) {
+    const formData = new FormData();
+    formData.append("nom", donnees.nom ?? "");
+    formData.append("prix", String(donnees.prix ?? 0));
+    if (donnees.category_id !== null && donnees.category_id !== undefined && donnees.category_id !== "") {
+      formData.append("category_id", String(donnees.category_id));
+    }
+    formData.append("stock", String(donnees.stock ?? 0));
+    formData.append("seuil_alerte", String(donnees.seuil_alerte ?? 5));
+    if (donnees.description) {
+      formData.append("description", donnees.description);
+    }
+    if (donnees.image_principale_index !== undefined && donnees.image_principale_index !== null) {
+      formData.append("image_principale_index", String(donnees.image_principale_index));
+    }
+    donnees.fichiers.forEach((fichier) => {
+      formData.append("images[]", fichier);
+    });
+    return postRequest("admin/products", formData);
+  }
+
   return postRequest("admin/products", donnees);
 };
 
 /**
  * Met à jour les informations d'un produit existant :
- * PUT /api/admin/products?id=...
+ * PUT /api/admin/products?id=... ou POST /api/admin/products/modifier?id=... (multipart)
  *
  * @param {number} id
  * @param {{
@@ -89,11 +137,53 @@ ProductData.create = async function (donnees) {
  *   category_id?: number|null,
  *   stock?: number,
  *   seuil_alerte?: number,
- *   description?: string|null
- * }} donnees
+ *   description?: string|null,
+ *   fichiers?: File[],
+ *   images_conservees_ids?: number[],
+ *   image_principale_id?: number|null,
+ *   image_principale_index?: number
+ * }|FormData} donnees
  * @returns {Promise<{ succes: boolean, message: string }>}
  */
 ProductData.update = async function (id, donnees) {
+  if (typeof FormData !== "undefined" && donnees instanceof FormData) {
+    if (!donnees.has("_method")) {
+      donnees.append("_method", "PUT");
+    }
+    return postRequest(`admin/products/modifier?id=${id}`, donnees);
+  }
+
+  if (Array.isArray(donnees?.fichiers) && donnees.fichiers.length > 0) {
+    const formData = new FormData();
+    formData.append("_method", "PUT");
+    formData.append("id", String(id));
+    formData.append("nom", donnees.nom ?? "");
+    formData.append("prix", String(donnees.prix ?? 0));
+    if (donnees.category_id !== null && donnees.category_id !== undefined && donnees.category_id !== "") {
+      formData.append("category_id", String(donnees.category_id));
+    }
+    formData.append("stock", String(donnees.stock ?? 0));
+    formData.append("seuil_alerte", String(donnees.seuil_alerte ?? 5));
+    if (donnees.description) {
+      formData.append("description", donnees.description);
+    }
+    if (Array.isArray(donnees.images_conservees_ids)) {
+      donnees.images_conservees_ids.forEach((idImg) => {
+        formData.append("images_conservees_ids[]", String(idImg));
+      });
+    }
+    if (donnees.image_principale_id !== null && donnees.image_principale_id !== undefined) {
+      formData.append("image_principale_id", String(donnees.image_principale_id));
+    }
+    if (donnees.image_principale_index !== null && donnees.image_principale_index !== undefined) {
+      formData.append("image_principale_index", String(donnees.image_principale_index));
+    }
+    donnees.fichiers.forEach((fichier) => {
+      formData.append("images[]", fichier);
+    });
+    return postRequest(`admin/products/modifier?id=${id}`, formData);
+  }
+
   return putRequest(`admin/products?id=${id}`, { id, ...donnees });
 };
 
@@ -103,14 +193,29 @@ ProductData.update = async function (id, donnees) {
  *
  * @param {{
  *   product_id: number,
- *   url: string,
+ *   url?: string,
+ *   fichier?: File,
  *   alt?: string|null,
  *   est_principale?: boolean,
  *   ordre?: number
- * }} donnees
+ * }|FormData} donnees
  * @returns {Promise<{ succes: boolean, id: number, message: string }>}
  */
 ProductData.addImage = async function (donnees) {
+  if (typeof FormData !== "undefined" && donnees instanceof FormData) {
+    return postRequest("admin/products/images", donnees);
+  }
+
+  if (donnees && typeof File !== "undefined" && donnees.fichier instanceof File) {
+    const formData = new FormData();
+    formData.append("product_id", String(donnees.product_id));
+    formData.append("image", donnees.fichier);
+    if (donnees.alt) formData.append("alt", donnees.alt);
+    if (donnees.est_principale) formData.append("est_principale", "1");
+    if (donnees.ordre !== undefined) formData.append("ordre", String(donnees.ordre));
+    return postRequest("admin/products/images", formData);
+  }
+
   return postRequest("admin/products/images", donnees);
 };
 

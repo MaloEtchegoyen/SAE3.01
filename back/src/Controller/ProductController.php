@@ -70,6 +70,58 @@ final class ProductController
     }
 
     /**
+     * Sert le fichier image d'un produit en flux binaire avec le bon Content-Type.
+     *
+     * @param Request $requete
+     * @return never
+     */
+    public function servirImage(Request $requete): void
+    {
+        $nom = basename($requete->parametre('nom') ?? '');
+        if ($nom === '') {
+            Response::erreur('Nom d\'image manquant', 400);
+        }
+
+        // 1. Chercher dans uploads/produits (fichiers téléversés)
+        $chemin = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'produits' . DIRECTORY_SEPARATOR . $nom;
+
+        // 2. Si pas trouvé, chercher dans front/assets/produits (catalogue par défaut)
+        if (!is_file($chemin)) {
+            $chemin = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'front' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'produits' . DIRECTORY_SEPARATOR . $nom;
+        }
+
+        // 3. Si pas trouvé, chercher dans front/dist/assets (build de production)
+        if (!is_file($chemin)) {
+            $motif = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'front' . DIRECTORY_SEPARATOR . 'dist' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . pathinfo($nom, PATHINFO_FILENAME) . '*';
+            $fichiersDist = glob($motif);
+            if (!empty($fichiersDist) && is_file($fichiersDist[0])) {
+                $chemin = $fichiersDist[0];
+            }
+        }
+
+        if (!is_file($chemin)) {
+            Response::erreur('Image introuvable', 404);
+        }
+
+        $extension = strtolower(pathinfo($chemin, PATHINFO_EXTENSION));
+        $typesMime = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'webp' => 'image/webp',
+            'gif'  => 'image/gif',
+            'svg'  => 'image/svg+xml',
+        ];
+        $contentType = $typesMime[$extension] ?? 'application/octet-stream';
+
+        header('Content-Type: ' . $contentType);
+        header('Content-Length: ' . (string) filesize($chemin));
+        header('Cache-Control: public, max-age=86400');
+        readfile($chemin);
+        exit;
+    }
+
+    /**
      * Liste des produits en JSON pour les administrateurs.
      */
     public function index(?Request $requete = null): void
@@ -111,6 +163,53 @@ final class ProductController
     }
 
     /**
+     * Enregistre les images téléversées pour un produit avec move_uploaded_file.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $fichiersImages
+    /**
+     * Enregistre les images téléversées pour un produit avec move_uploaded_file et les insère dans product_image.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $fichiersImages
+     * @return array<int, int> Liste des identifiants des images créées
+     */
+    private function enregistrerFichiersImages(int $productId, array $fichiersImages): array
+    {
+        $dossierUpload = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'produits';
+        if (!is_dir($dossierUpload)) {
+            mkdir($dossierUpload, 0755, true);
+        }
+
+        $names    = is_array($fichiersImages['name']) ? $fichiersImages['name'] : [$fichiersImages['name']];
+        $tmpNames = is_array($fichiersImages['tmp_name']) ? $fichiersImages['tmp_name'] : [$fichiersImages['tmp_name']];
+        $errors   = is_array($fichiersImages['error']) ? $fichiersImages['error'] : [$fichiersImages['error']];
+        $count    = count($names);
+        $idsInserts = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            if ($errors[$i] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $nomOriginal = (string) $names[$i];
+            $tmpPath     = (string) $tmpNames[$i];
+
+            // Conserver le nom d'origine assaini pour éviter tout caractère dangereux
+            $nomSecurise = basename($nomOriginal);
+            $nomSecurise = preg_replace('/[^a-zA-Z0-9._-]/', '_', $nomSecurise) ?: ('image_' . time() . '_' . $i . '.jpg');
+
+            $cheminDestination = $dossierUpload . DIRECTORY_SEPARATOR . $nomSecurise;
+
+            if (move_uploaded_file($tmpPath, $cheminDestination)) {
+                $idsInserts[] = $this->produits->ajouterImage($productId, $nomSecurise, null, false, $i);
+            }
+        }
+
+        return $idsInserts;
+    }
+
+    /**
      * US 1 : Créer un nouveau produit avec toutes ses informations.
      */
     public function creer(Request $requete): void
@@ -118,6 +217,14 @@ final class ProductController
         $this->verifierAccesAdmin();
 
         $corps = $requete->corps();
+
+        // Si un identifiant est présent, rediriger vers la modification pour éviter toute création en doublon
+        $idExistant = (int) ($requete->parametre('id') ?? $corps['id'] ?? 0);
+        if ($idExistant > 0) {
+            $this->modifier($requete);
+            return;
+        }
+
         if (empty($corps['nom']) || !is_string($corps['nom'])) {
             Response::erreur('Le nom du produit est requis', 400);
         }
@@ -128,6 +235,26 @@ final class ProductController
 
         try {
             $id = $this->produits->ajouter($corps);
+
+            // Traitement des images envoyées depuis le formulaire
+            $fichiers = $requete->fichiers();
+            $fichiersImages = !empty($fichiers['images']['name'])
+                ? $fichiers['images']
+                : (!empty($fichiers['image']['name']) ? $fichiers['image'] : null);
+
+            if ($fichiersImages !== null) {
+                $idsCrees = $this->enregistrerFichiersImages($id, $fichiersImages);
+                $indexPrinc = isset($corps['image_principale_index']) && is_numeric($corps['image_principale_index'])
+                    ? (int) $corps['image_principale_index']
+                    : 0;
+
+                if (isset($idsCrees[$indexPrinc])) {
+                    $this->produits->definirImagePrincipale($id, $idsCrees[$indexPrinc]);
+                } else {
+                    $this->produits->garantirImagePrincipale($id);
+                }
+            }
+
             Response::json(['succes' => true, 'id' => $id, 'message' => 'Produit créé avec succès.'], 201);
         } catch (Throwable $e) {
             Response::erreur('Erreur lors de la création du produit : ' . $e->getMessage(), 500);
@@ -158,6 +285,51 @@ final class ProductController
 
         try {
             $this->produits->modifier($id, $corps);
+
+            // 1. Suppression des images existantes non conservées
+            if (isset($corps['images_conservees_ids'])) {
+                $gardees = is_array($corps['images_conservees_ids'])
+                    ? array_map('intval', $corps['images_conservees_ids'])
+                    : array_map('intval', array_filter(explode(',', (string) $corps['images_conservees_ids']), 'is_numeric'));
+
+                $imagesActuelles = $this->produits->listerImages($id);
+                $totalActuelles = count($imagesActuelles);
+                for ($k = 0; $k < $totalActuelles; $k++) {
+                    $imgId = (int) $imagesActuelles[$k]['id'];
+                    if (!in_array($imgId, $gardees, true)) {
+                        $this->produits->supprimerImage($imgId, $id);
+                    }
+                }
+            }
+
+            // 2. Traitement d'images supplémentaires téléversées lors de la modification
+            $fichiers = $requete->fichiers();
+            $fichiersImages = !empty($fichiers['images']['name'])
+                ? $fichiers['images']
+                : (!empty($fichiers['image']['name']) ? $fichiers['image'] : null);
+
+            $idsCrees = [];
+            if ($fichiersImages !== null) {
+                $idsCrees = $this->enregistrerFichiersImages($id, $fichiersImages);
+            }
+
+            // 3. Définition de l'image principale
+            $indexNouvellePrinc = isset($corps['image_principale_index']) && is_numeric($corps['image_principale_index'])
+                ? (int) $corps['image_principale_index']
+                : -1;
+
+            $idExistantePrinc = isset($corps['image_principale_id']) && is_numeric($corps['image_principale_id'])
+                ? (int) $corps['image_principale_id']
+                : 0;
+
+            if ($indexNouvellePrinc >= 0 && isset($idsCrees[$indexNouvellePrinc])) {
+                $this->produits->definirImagePrincipale($id, $idsCrees[$indexNouvellePrinc]);
+            } elseif ($idExistantePrinc > 0) {
+                $this->produits->definirImagePrincipale($id, $idExistantePrinc);
+            } else {
+                $this->produits->garantirImagePrincipale($id);
+            }
+
             Response::json(['succes' => true, 'message' => 'Produit mis à jour avec succès.']);
         } catch (Throwable $e) {
             Response::erreur('Erreur lors de la mise à jour du produit : ' . $e->getMessage(), 500);
@@ -202,13 +374,30 @@ final class ProductController
         $principale = !empty($corps['est_principale']);
         $ordre      = (int) ($corps['ordre'] ?? 0);
 
+        // Si un fichier est téléversé en multipart
+        $fichiers = $requete->fichiers();
+        if (!empty($fichiers['image']['name']) && ($fichiers['image']['error'] ?? 1) === UPLOAD_ERR_OK) {
+            $dossierUpload = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'produits';
+            if (!is_dir($dossierUpload)) {
+                mkdir($dossierUpload, 0755, true);
+            }
+
+            $nomSecurise = basename((string) $fichiers['image']['name']);
+            $nomSecurise = preg_replace('/[^a-zA-Z0-9._-]/', '_', $nomSecurise) ?: ('image_' . time() . '.jpg');
+            $tmpPath     = (string) $fichiers['image']['tmp_name'];
+
+            if (move_uploaded_file($tmpPath, $dossierUpload . DIRECTORY_SEPARATOR . $nomSecurise)) {
+                $url = $nomSecurise;
+            }
+        }
+
         if ($productId <= 0 || empty($url)) {
-            Response::erreur('Identifiant de produit et URL d\'image requis', 400);
+            Response::erreur('Identifiant de produit et URL ou fichier d\'image requis', 400);
         }
 
         try {
             $imageId = $this->produits->ajouterImage($productId, $url, $alt, $principale, $ordre);
-            Response::json(['succes' => true, 'id' => $imageId, 'message' => 'Image ajoutée avec succès.'], 201);
+            Response::json(['succes' => true, 'id' => $imageId, 'url' => $url, 'message' => 'Image ajoutée avec succès.'], 201);
         } catch (Throwable $e) {
             Response::erreur('Erreur lors de l\'ajout de l\'image : ' . $e->getMessage(), 500);
         }
