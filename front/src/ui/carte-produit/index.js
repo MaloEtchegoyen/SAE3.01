@@ -112,6 +112,34 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
 }
 
 /**
+ * Résout l'URL d'affichage pour une image de produit.
+ * Si le produit stocke le nom du fichier (ex. "mon_image.jpg"), on pointe vers "uploads/produits/".
+ *
+ * @param {string|null|undefined} sourceImage Nom de l'image ou URL
+ * @returns {string|null}
+ */
+function resoudreUrlImage(sourceImage) {
+  if (!sourceImage || typeof sourceImage !== "string") return null;
+
+  const nettoyee = sourceImage.trim();
+  if (!nettoyee) return null;
+
+  if (
+    nettoyee.startsWith("http://") ||
+    nettoyee.startsWith("https://") ||
+    nettoyee.startsWith("data:") ||
+    nettoyee.startsWith("blob:")
+  ) {
+    return nettoyee;
+  }
+
+  const nomFichier = nettoyee.includes("/") ? nettoyee.split("/").pop() : nettoyee;
+  const base = import.meta.env.BASE_URL || "/";
+  const racine = base.endsWith("/") ? base : `${base}/`;
+  return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
+}
+
+/**
  * Vue présentative CarteProduitView.
  *
  * Affiche une carte produit avec :
@@ -142,15 +170,16 @@ let CarteProduitView = {
   html: function (produit = {}) {
     const stockInfo = calculerEtatStock(produit.stock, produit.seuil_alerte);
     const classeImage = obtenirClasseImage(produit);
-    const urlExplicite = produit.image_url || (produit.url && produit.url.startsWith("http") ? produit.url : null);
-    const styleImage = urlExplicite ? `style="background-image: url('${urlExplicite}')"` : "";
+    const sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
+    const urlExplicite = resoudreUrlImage(sourceImage);
+    const styleInline = urlExplicite ? `background-image: url('${urlExplicite}')` : "";
 
     return genericRenderer(template, {
       id: produit.id ?? "",
       nom: produit.nom || produit.titre || "Produit sans nom",
       prix: formaterPrix(produit.prix),
       classe_image: classeImage,
-      style_image: styleImage,
+      style_inline: styleInline,
       etat_stock: stockInfo.texte,
       classe_stock: stockInfo.classes,
       code_stock: stockInfo.code,
@@ -182,6 +211,13 @@ let CarteProduitView = {
   dom: function (produit = {}, actions = {}) {
     const fragment = htmlToFragment(CarteProduitView.html(produit));
     const article = fragment.querySelector("article");
+    const elImage = fragment.querySelector('[data-ref="image"]');
+
+    const sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
+    const urlExplicite = resoudreUrlImage(sourceImage);
+    if (elImage && urlExplicite) {
+      elImage.style.backgroundImage = `url("${urlExplicite}")`;
+    }
 
     if (article && typeof actions?.onClick === "function") {
       article.classList.add("cursor-pointer");

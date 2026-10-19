@@ -16,6 +16,9 @@ RewriteEngine On
 #    QSA conserve la chaîne de requête (?page=2), END arrête la réécriture.
 RewriteRule ^api/ back/index.php [END,QSA]
 
+# 1bis. Fichiers téléversés dans uploads/ : servis directement
+RewriteRule ^uploads/ - [END]
+
 # 3. (second passage, voir la règle 2) La requête désigne désormais un chemin
 #    dans front/dist/. Si c'est un fichier du build (script, feuille de style,
 #    image), on le sert tel quel.

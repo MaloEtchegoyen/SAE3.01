@@ -21,15 +21,19 @@ final class Request
     /** Paramètres de la chaîne de requête ($_GET). */
     private array $parametres;
 
-    /** Corps de la requête, décodé depuis le JSON reçu. */
+    /** Corps de la requête, décodé depuis le JSON reçu ou issu de $_POST. */
     private array $corps;
 
-    private function __construct(string $methode, string $chemin, array $parametres, array $corps)
+    /** Fichiers téléversés reçus via $_FILES. */
+    private array $fichiers;
+
+    private function __construct(string $methode, string $chemin, array $parametres, array $corps, array $fichiers = [])
     {
         $this->methode    = $methode;
         $this->chemin     = $chemin;
         $this->parametres = $parametres;
         $this->corps      = $corps;
+        $this->fichiers   = $fichiers;
     }
 
     /**
@@ -53,14 +57,28 @@ final class Request
         if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             $brut    = file_get_contents('php://input') ?: '';
             $decode  = json_decode($brut, true);
-            $corps   = is_array($decode) ? $decode : [];
+            if (is_array($decode)) {
+                $corps = $decode;
+            } elseif (!empty($_POST)) {
+                $corps = $_POST;
+            }
+        }
+
+        $methode = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if ($methode === 'POST') {
+            if (!empty($_POST['_method'])) {
+                $methode = strtoupper((string) $_POST['_method']);
+            } elseif (!empty($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
+                $methode = strtoupper((string) $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+            }
         }
 
         return new self(
-            strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            $methode,
             $chemin,
             $_GET,
             $corps,
+            $_FILES ?? [],
         );
     }
 
@@ -85,11 +103,34 @@ final class Request
     }
 
     /**
-     * Le corps JSON de la requête, décodé en tableau associatif.
+     * Le corps JSON ou POST de la requête, décodé en tableau associatif.
      */
     public function corps(): array
     {
         return $this->corps;
+    }
+
+    /**
+     * Les fichiers téléversés via $_FILES.
+     *
+     * @return array<string, mixed>
+     */
+    public function fichiers(): array
+    {
+        return $this->fichiers;
+    }
+
+    /**
+     * Retourne les informations d'un fichier téléversé spécifique si présent.
+     *
+     * @param string $cle
+     * @return array<string, mixed>|null
+     */
+    public function fichier(string $cle): ?array
+    {
+        return isset($this->fichiers[$cle]) && is_array($this->fichiers[$cle])
+            ? $this->fichiers[$cle]
+            : null;
     }
 
     /**

@@ -26,12 +26,14 @@ return [
     'GET    /api/products'                         => [ProductController::class, 'catalogue'],
     'GET    /api/categories'                       => [ProductController::class, 'catalogueCategories'],
     'GET    /api/products/detail'                  => [ProductController::class, 'catalogueDetail'],
+    'GET    /api/products/image'                   => [ProductController::class, 'servirImage'],
 
     // Administration - Produits
     'GET    /api/admin/products'                   => [ProductController::class, 'index'],
     'GET    /api/admin/categories'                 => [ProductController::class, 'categories'],
     'GET    /api/admin/products/detail'            => [ProductController::class, 'detail'],
     'POST   /api/admin/products'                   => [ProductController::class, 'creer'],
+    'POST   /api/admin/products/modifier'          => [ProductController::class, 'modifier'],
     'PUT    /api/admin/products'                   => [ProductController::class, 'modifier'],
     'DELETE /api/admin/products'                   => [ProductController::class, 'supprimer'],
 

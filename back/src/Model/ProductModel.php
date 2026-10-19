@@ -65,7 +65,8 @@ final class ProductModel
      *     prix: float,
      *     stock: int,
      *     seuil_alerte: int,
-     *     description: ?string
+     *     description: ?string,
+     *     image_url: ?string
      * }>
      */
     public function lister(): array
@@ -77,7 +78,14 @@ final class ProductModel
                        product.stock,
                        product.seuil_alerte,
                        product.description,
-                       category.nom AS categorie
+                       category.nom AS categorie,
+                       (
+                           SELECT pi.url
+                             FROM product_image pi
+                            WHERE pi.product_id = product.id
+                         ORDER BY pi.est_principale DESC, pi.ordre ASC, pi.id ASC
+                            LIMIT 1
+                       ) AS image_url
                   FROM product
              LEFT JOIN category ON category.id = product.category_id
                  WHERE product.actif = 1
@@ -95,6 +103,7 @@ final class ProductModel
                 'stock'        => (int) $ligne['stock'],
                 'seuil_alerte' => (int) $ligne['seuil_alerte'],
                 'description'  => $ligne['description'] !== null ? (string) $ligne['description'] : null,
+                'image_url'    => $ligne['image_url'] !== null ? (string) $ligne['image_url'] : null,
             ];
         }, $lignes);
     }
@@ -112,7 +121,8 @@ final class ProductModel
      *     stock: int,
      *     seuil_alerte: int,
      *     description: ?string,
-     *     actif: int
+     *     actif: int,
+     *     image_url: ?string
      * }|null
      */
     public function trouverParId(int $id): ?array
@@ -126,7 +136,14 @@ final class ProductModel
                     product.seuil_alerte,
                     product.description,
                     product.actif,
-                    category.nom AS categorie
+                    category.nom AS categorie,
+                    (
+                        SELECT pi.url
+                          FROM product_image pi
+                         WHERE pi.product_id = product.id
+                      ORDER BY pi.est_principale DESC, pi.ordre ASC, pi.id ASC
+                         LIMIT 1
+                    ) AS image_url
                FROM product
           LEFT JOIN category ON category.id = product.category_id
               WHERE product.id = :id'
@@ -148,6 +165,7 @@ final class ProductModel
             'seuil_alerte' => (int) $ligne['seuil_alerte'],
             'description'  => $ligne['description'] !== null ? (string) $ligne['description'] : null,
             'actif'        => (int) $ligne['actif'],
+            'image_url'    => $ligne['image_url'] !== null ? (string) $ligne['image_url'] : null,
         ];
     }
 
@@ -351,6 +369,33 @@ final class ProductModel
         } catch (Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
+        }
+    }
+
+    /**
+     * Garantit qu'au moins une image est définie comme principale si le produit a des images.
+     *
+     * @param int $productId
+     * @return void
+     */
+    public function garantirImagePrincipale(int $productId): void
+    {
+        $images = $this->listerImages($productId);
+        $total = count($images);
+        if ($total === 0) {
+            return;
+        }
+
+        $aPrincipale = false;
+        for ($i = 0; $i < $total; $i++) {
+            if (!empty($images[$i]['est_principale'])) {
+                $aPrincipale = true;
+                break;
+            }
+        }
+
+        if (!$aPrincipale && isset($images[0]['id'])) {
+            $this->definirImagePrincipale($productId, (int) $images[0]['id']);
         }
     }
 

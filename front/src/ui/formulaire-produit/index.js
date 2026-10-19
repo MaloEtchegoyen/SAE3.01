@@ -75,7 +75,42 @@ let FormulaireProduitView = {
     let messageVide = form.querySelector('[data-ref="message-vide"]');
     let grilleImages = form.querySelector('[data-ref="grille-images"]');
 
-    let imagesSelectionnees = []; // Array<{ url: string, nom: string }>
+    let imagesSelectionnees = []; // Array<{ url: string, nom: string, file?: File, existante?: boolean, id?: number }>
+
+    if (data.produit) {
+      const base = import.meta.env.BASE_URL || "/";
+      const racine = base.endsWith("/") ? base : `${base}/`;
+
+      const construireUrlImage = function (source) {
+        if (!source) return "";
+        if (source.startsWith("http://") || source.startsWith("https://") || source.startsWith("data:") || source.startsWith("blob:")) {
+          return source;
+        }
+        const nomFichier = source.includes("/") ? source.split("/").pop() : source;
+        return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
+      };
+
+      if (Array.isArray(data.produit.images) && data.produit.images.length > 0) {
+        imagesSelectionnees = data.produit.images.slice(0, 4).map((img) => {
+          const nom = img.url || "";
+          return {
+            url: construireUrlImage(nom),
+            nom,
+            id: img.id,
+            existante: true,
+          };
+        });
+      } else if (data.produit.image_url) {
+        const nom = data.produit.image_url;
+        imagesSelectionnees = [
+          {
+            url: construireUrlImage(nom),
+            nom,
+            existante: true,
+          },
+        ];
+      }
+    }
 
     let mettreAJourAffichage = function () {
       let nb = imagesSelectionnees.length;
@@ -174,6 +209,9 @@ let FormulaireProduitView = {
       }
     };
 
+    // Affichage initial des images pré-existantes éventuelles
+    mettreAJourAffichage();
+
     let traiterFichiers = function (fichiers) {
       if (!fichiers || fichiers.length === 0) return;
 
@@ -191,6 +229,7 @@ let FormulaireProduitView = {
             resolve({
               url: e.target.result,
               nom: file.name,
+              file: file,
             });
           };
           reader.readAsDataURL(file);
@@ -255,6 +294,25 @@ let FormulaireProduitView = {
       }
 
       let urlsImages = imagesSelectionnees.map((img) => img.url);
+      let fichiersImages = imagesSelectionnees
+        .map((img) => img.file)
+        .filter((f) => f instanceof File);
+
+      let imagesConserveesIds = imagesSelectionnees
+        .filter((img) => img.existante && img.id)
+        .map((img) => img.id);
+
+      let imagePrincipaleId = null;
+      let imagePrincipaleIndex = -1;
+
+      if (imagesSelectionnees.length > 0) {
+        const premiere = imagesSelectionnees[0];
+        if (premiere.existante && premiere.id) {
+          imagePrincipaleId = premiere.id;
+        } else if (premiere.file instanceof File) {
+          imagePrincipaleIndex = fichiersImages.indexOf(premiere.file);
+        }
+      }
 
       if (typeof actions.surSoumission === "function") {
         actions.surSoumission({
@@ -267,6 +325,10 @@ let FormulaireProduitView = {
           description,
           images: urlsImages,
           image: urlsImages.length > 0 ? urlsImages[0] : null,
+          fichiers: fichiersImages,
+          images_conservees_ids: imagesConserveesIds,
+          image_principale_id: imagePrincipaleId,
+          image_principale_index: imagePrincipaleIndex,
         });
       }
     });

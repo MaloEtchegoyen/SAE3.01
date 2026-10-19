@@ -70,7 +70,7 @@ C.handler_toggle_formulaire = function () {
  *   description?: string|null
  * }|number} produitOuId
  */
-C.handler_ouvrir_edition = function (produitOuId) {
+C.handler_ouvrir_edition = async function (produitOuId) {
   const produit =
     typeof produitOuId === "object" && produitOuId !== null
       ? produitOuId
@@ -82,6 +82,16 @@ C.handler_ouvrir_edition = function (produitOuId) {
   M.formulaireOuvert = true;
   M.message = null;
   V.rafraichir();
+
+  try {
+    const detail = await ProductData.fetchDetail(produit.id);
+    if (detail && M.produitEnEdition && M.produitEnEdition.id === produit.id) {
+      M.produitEnEdition = detail;
+      V.rafraichir();
+    }
+  } catch {
+    // Si la requête de détail échoue, conserver le produit actuel
+  }
 };
 
 /**
@@ -116,6 +126,8 @@ C.handler_ajouter_produit = async function (donnees) {
       stock: donnees.stock,
       seuil_alerte: donnees.seuil_alerte,
       description: donnees.description,
+      fichiers: donnees.fichiers,
+      image_principale_index: donnees.image_principale_index,
     };
     const reponse = await ProductData.create(donneesProduit);
     M.message = {
@@ -187,7 +199,11 @@ C.handler_confirmer_suppression = async function (id) {
  *   category_id: number|null,
  *   stock: number,
  *   seuil_alerte: number,
- *   description: string|null
+ *   description: string|null,
+ *   fichiers?: File[],
+ *   images_conservees_ids?: number[],
+ *   image_principale_id?: number|null,
+ *   image_principale_index?: number
  * }} donnees
  */
 C.handler_modifier_produit = async function (donnees) {
@@ -202,6 +218,10 @@ C.handler_modifier_produit = async function (donnees) {
       stock: donnees.stock,
       seuil_alerte: donnees.seuil_alerte,
       description: donnees.description,
+      fichiers: donnees.fichiers,
+      images_conservees_ids: donnees.images_conservees_ids,
+      image_principale_id: donnees.image_principale_id,
+      image_principale_index: donnees.image_principale_index,
     };
     const reponse = await ProductData.update(id, donneesProduit);
     M.message = {
