@@ -43,6 +43,72 @@ ProductData.fetchDetail = async function (id) {
 };
 
 /**
+ * Récupère le détail complet d'un produit à partir de son slug ou de son id.
+ * Résout le produit depuis la liste globale pour extraire son identifiant technique et ses catégories,
+ * puis charge ses informations complètes (images, variantes).
+ *
+ * @param {string|number} slugOuId
+ * @returns {Promise<object|null>}
+ */
+ProductData.fetchBySlugOrId = async function (slugOuId) {
+  if (!slugOuId) return null;
+
+  const produits = await ProductData.fetchAll();
+  if (!Array.isArray(produits) || produits.length === 0) {
+    return null;
+  }
+
+  const strCible = String(slugOuId).trim().toLowerCase();
+  const idCible = Number(slugOuId);
+
+  // Recherche par ID direct ou par comparaison du nom / slug
+  let produitTrouve = produits.find((p) => {
+    if (!Number.isNaN(idCible) && Number(p.id) === idCible) {
+      return true;
+    }
+    const slugProduit = (p.nom || "")
+      .toLowerCase()
+      .trim()
+      .replaceAll("é", "e")
+      .replaceAll("è", "e")
+      .replaceAll("ê", "e")
+      .replaceAll("à", "a")
+      .replaceAll("â", "a")
+      .replaceAll("ç", "c")
+      .replaceAll("ô", "o")
+      .replaceAll("î", "i")
+      .replaceAll("ï", "i")
+      .replaceAll("ù", "u")
+      .replaceAll("&", "et")
+      .replaceAll(" ", "-")
+      .replaceAll("'", "-");
+
+    return slugProduit === strCible || String(p.id) === strCible;
+  });
+
+  if (!produitTrouve) {
+    return null;
+  }
+
+  try {
+    const detail = await ProductData.fetchDetail(produitTrouve.id);
+    return {
+      ...produitTrouve,
+      ...detail,
+      images: Array.isArray(detail?.images) ? detail.images : [],
+      variantes: Array.isArray(detail?.variantes) ? detail.variantes : [],
+    };
+  } catch {
+    // Si l'endpoint de détail échoue ou n'est pas disponible, renvoyer au moins les infos du catalogue
+    return {
+      ...produitTrouve,
+      images: produitTrouve.image_url ? [{ url: produitTrouve.image_url, est_principale: true }] : [],
+      variantes: [],
+    };
+  }
+};
+
+/**
  * Récupère la liste de tous les produits pour l'administration :
  * GET /api/admin/products (réservé aux administrateurs).
  *
