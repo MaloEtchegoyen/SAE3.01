@@ -1,0 +1,60 @@
+<div data-ref="galerie-conteneur" class="max-h-125 flex flex-col gap-4">
+  <!-- Grande image d'affichage -->
+  <div class="relative overflow-hidden rounded-3xl border border-border bg-subtle aspect-4/3 w-full shadow-xs">
+    <!-- Image principale ou arrière-plan thématique -->
+    <img
+      data-ref="image-principale"
+      src=""
+      alt="{{nom}}"
+      class="h-full w-full object-cover transition-opacity duration-300"
+    />
+    <div
+      data-ref="bg-secours"
+      role="img"
+      aria-label="{{nom}}"
+      class="hidden absolute inset-0 h-full w-full bg-cover bg-center"
+    ></div>
+
+    <!-- Badge d'état de stock -->
+    <div class="absolute top-4 left-4 z-10">
+      <span
+        data-ref="badge-stock"
+        data-stock="{{code_stock}}"
+        class="badge-stock inline-flex items-center rounded-sm border border-border px-3.5 py-2 text-xs font-semibold tracking-wide shadow-xs"
+      >
+        {{etat_stock}}
+      </span>
+    </div>
+
+    <!-- Boutons fléchés Précédent / Suivant si plusieurs visuels -->
+    <div data-ref="controles-navigation" class="absolute inset-y-0 inset-x-2 flex items-center justify-between pointer-events-none">
+      <button
+        type="button"
+        data-action="precedent"
+        aria-label="Image précédente"
+        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        data-action="suivant"
+        aria-label="Image suivante"
+        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Rangée des vignettes de prévisualisation -->
+  <div data-ref="vignettes-conteneur" class="flex flex-wrap items-center gap-2 pt-1">
+    <slot name="vignettes"></slot>
+  </div>
+</div>
+

@@ -1,79 +1,10 @@
 import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
-import { formaterPrix } from "../../lib/format.js";
+import { formaterPrix, slugifier } from "../../lib/format.js";
+import placeholderImg from "../../../assets/landscape-placeholder.svg";
 import template from "./template.html?raw";
 
 /**
- * Dictionnaire exhaustif associant chaque clé d'image produit à sa classe Tailwind complète.
- * Respecte la règle d'interdiction de concaténation dynamique des classes Tailwind.
- */
-const CLASSES_IMAGES_PRODUITS = {
-  "cafe-noisettes": "bg-prod-cafe-noisettes",
-  "chai-latte": "bg-prod-chai-latte",
-  "chocolat-chaud": "bg-prod-chocolat-chaud",
-  "citronnade": "bg-prod-citronnade",
-  "eclair": "bg-prod-eclair",
-  "flan": "bg-prod-flan",
-  "latte-macchiato": "bg-prod-latte-macchiato",
-  "milkshake": "bg-prod-milkshake",
-  "mousse-chocolat": "bg-prod-mousse-chocolat",
-  "orange": "bg-prod-orange",
-  "riz": "bg-prod-riz",
-  "the-glace": "bg-prod-the-glace",
-  defaut: "bg-prod-defaut",
-};
-
-/**
- * Liste des correspondances par mots-clés pour identifier l'image adaptée d'un produit selon son nom.
- */
-const CORRESPONDANCES_PRODUITS = [
-  { motif: /noisette/i, cle: "cafe-noisettes" },
-  { motif: /chai/i, cle: "chai-latte" },
-  { motif: /chocolat.*chaud|chocolat chaud/i, cle: "chocolat-chaud" },
-  { motif: /citron/i, cle: "citronnade" },
-  { motif: /eclair|éclair/i, cle: "eclair" },
-  { motif: /flan/i, cle: "flan" },
-  { motif: /macchiato|latte/i, cle: "latte-macchiato" },
-  { motif: /milkshake/i, cle: "milkshake" },
-  { motif: /mousse/i, cle: "mousse-chocolat" },
-  { motif: /orange/i, cle: "orange" },
-  { motif: /riz/i, cle: "riz" },
-  { motif: /thé|the.*glac/i, cle: "the-glace" },
-];
-
-/**
- * Détermine la classe Tailwind de fond correspondant à un produit.
- *
- * @param {{
- *   nom?: string,
- *   titre?: string,
- *   image?: string,
- *   image_cle?: string,
- *   classe_image?: string
- * }} produit
- * @returns {string} Classe Tailwind complète (ex. « bg-prod-cafe-noisettes »)
- */
-function obtenirClasseImage(produit = {}) {
-  if (produit.classe_image && CLASSES_IMAGES_PRODUITS[produit.classe_image]) {
-    return CLASSES_IMAGES_PRODUITS[produit.classe_image];
-  }
-
-  const cleExplicite = produit.image_cle || produit.image;
-  if (cleExplicite && CLASSES_IMAGES_PRODUITS[cleExplicite]) {
-    return CLASSES_IMAGES_PRODUITS[cleExplicite];
-  }
-
-  const nom = produit.nom || produit.titre || "";
-  for (let i = 0; i < CORRESPONDANCES_PRODUITS.length; i++) {
-    if (CORRESPONDANCES_PRODUITS[i].motif.test(nom)) {
-      return CLASSES_IMAGES_PRODUITS[CORRESPONDANCES_PRODUITS[i].cle];
-    }
-  }
-
-  return CLASSES_IMAGES_PRODUITS.defaut;
-}
-
-/**
- * Calcule l'état du stock et les classes Tailwind correspondantes.
+ * Calcule l'état du stock (libellé et code).
  *
  * États :
  * - « Épuisé » : stock <= 0
@@ -82,7 +13,7 @@ function obtenirClasseImage(produit = {}) {
  *
  * @param {number|string|null|undefined} stock
  * @param {number|string|null|undefined} [seuilAlerte=5]
- * @returns {{ texte: string, classes: string, code: string }}
+ * @returns {{ texte: string, code: string }}
  */
 function calculerEtatStock(stock, seuilAlerte = 5) {
   const quantite = Number(stock ?? 0);
@@ -91,7 +22,6 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
   if (quantite <= 0) {
     return {
       texte: "Épuisé",
-      classes: "bg-content-secondary text-white",
       code: "epuise",
     };
   }
@@ -99,30 +29,28 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
   if (quantite <= seuil) {
     return {
       texte: "Bientôt épuisé",
-      classes: "bg-strong text-default",
       code: "bientot-epuise",
     };
   }
 
   return {
     texte: "En stock",
-    classes: "bg-brand text-default",
     code: "en-stock",
   };
 }
 
 /**
  * Résout l'URL d'affichage pour une image de produit.
- * Si le produit stocke le nom du fichier (ex. "mon_image.jpg"), on pointe vers "uploads/produits/".
+ * Si aucune image n'est spécifiée, utilise le placeholder officiel landscape-placeholder.svg.
  *
  * @param {string|null|undefined} sourceImage Nom de l'image ou URL
- * @returns {string|null}
+ * @returns {string}
  */
 function resoudreUrlImage(sourceImage) {
-  if (!sourceImage || typeof sourceImage !== "string") return null;
+  if (!sourceImage || typeof sourceImage !== "string") return placeholderImg;
 
   const nettoyee = sourceImage.trim();
-  if (!nettoyee) return null;
+  if (!nettoyee) return placeholderImg;
 
   if (
     nettoyee.startsWith("http://") ||
@@ -130,6 +58,10 @@ function resoudreUrlImage(sourceImage) {
     nettoyee.startsWith("data:") ||
     nettoyee.startsWith("blob:")
   ) {
+    return nettoyee;
+  }
+
+  if (nettoyee.startsWith("/assets/") || nettoyee.includes("assets/")) {
     return nettoyee;
   }
 
@@ -143,8 +75,8 @@ function resoudreUrlImage(sourceImage) {
  * Vue présentative CarteProduitView.
  *
  * Affiche une carte produit avec :
- * - Une image en arrière-plan via Tailwind CSS (avec voile dégradé pour la lisibilité)
- * - Le nom du produit
+ * - Une image d'arrière-plan ou placeholder SVG
+ * - Le nom du produit cliquable
  * - L'état du stock (« Épuisé », « Bientôt épuisé », « En stock »)
  * - Le prix unitaire formaté
  */
@@ -162,26 +94,23 @@ let CarteProduitView = {
    *   image?: string,
    *   imageUrl?: string,
    *   url?: string,
-   *   categorie?: string,
-   *   classe_image?: string
+   *   categorie?: string
    * }} produit
    * @returns {string}
    */
   html: function (produit = {}) {
     const stockInfo = calculerEtatStock(produit.stock, produit.seuil_alerte);
-    const classeImage = obtenirClasseImage(produit);
     const sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
     const urlExplicite = resoudreUrlImage(sourceImage);
-    const styleInline = urlExplicite ? `background-image: url('${urlExplicite}')` : "";
+    const slug = slugifier(produit.nom || produit.titre || "");
 
     return genericRenderer(template, {
       id: produit.id ?? "",
       nom: produit.nom || produit.titre || "Produit sans nom",
+      slug: slug || String(produit.id ?? ""),
       prix: formaterPrix(produit.prix),
-      classe_image: classeImage,
-      style_inline: styleInline,
+      image_url: urlExplicite,
       etat_stock: stockInfo.texte,
-      classe_stock: stockInfo.classes,
       code_stock: stockInfo.code,
       categorie: produit.categorie || "",
     });
@@ -200,8 +129,7 @@ let CarteProduitView = {
    *   image?: string,
    *   imageUrl?: string,
    *   url?: string,
-   *   categorie?: string,
-   *   classe_image?: string
+   *   categorie?: string
    * }} produit
    * @param {{
    *   onClick?: (produit: object) => void
@@ -211,16 +139,8 @@ let CarteProduitView = {
   dom: function (produit = {}, actions = {}) {
     const fragment = htmlToFragment(CarteProduitView.html(produit));
     const article = fragment.querySelector("article");
-    const elImage = fragment.querySelector('[data-ref="image"]');
-
-    const sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
-    const urlExplicite = resoudreUrlImage(sourceImage);
-    if (elImage && urlExplicite) {
-      elImage.style.backgroundImage = `url("${urlExplicite}")`;
-    }
 
     if (article && typeof actions?.onClick === "function") {
-      article.classList.add("cursor-pointer");
       article.addEventListener("click", () => actions.onClick(produit));
     }
 
@@ -228,5 +148,5 @@ let CarteProduitView = {
   },
 };
 
-export { CarteProduitView, calculerEtatStock, obtenirClasseImage, CLASSES_IMAGES_PRODUITS };
+export { CarteProduitView, calculerEtatStock, resoudreUrlImage };
 

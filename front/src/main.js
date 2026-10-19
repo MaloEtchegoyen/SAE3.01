@@ -5,6 +5,7 @@ import { CataloguePage } from "./pages/catalogue/page.js";
 import { AdminPage } from "./pages/admin/page.js";
 import { AdminProduitsPage } from "./pages/admin-produits/page.js";
 import { ConnexionAdminPage } from "./pages/connexion-admin/page.js";
+import { DetailProduitPage } from "./pages/detail-produit/page.js";
 import { The404Page } from "./pages/404/page.js";
 
 // base : chemin du projet sur le serveur (BASE dans vite.config.js).
@@ -16,6 +17,7 @@ router.addLayout("/admin", AdminLayout);
 router.addRoute("/", CataloguePage);
 router.addRoute("/categorie", CataloguePage);
 router.addRoute("/categorie/:slug", CataloguePage);
+router.addRoute("/produit/:slug", DetailProduitPage);
 router.addRoute("/connexion-admin", ConnexionAdminPage, { useLayout: false });
 router.addRoute("/admin", AdminPage);
 router.addRoute("/admin/produits", AdminProduitsPage);

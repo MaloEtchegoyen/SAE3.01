@@ -270,7 +270,14 @@ V.createPageFragment = function () {
 
   pageFragment
     .querySelector('slot[name="grille"]')
-    .replaceWith(GrilleProduitsView.dom(produitsFiltres));
+    .replaceWith(
+      GrilleProduitsView.dom(produitsFiltres, {
+        onClick: (produit) => {
+          const slug = slugifier(produit?.nom || "") || String(produit?.id || "");
+          if (slug) navigate(`/produit/${slug}`);
+        },
+      })
+    );
 
   let slotPagination = pageFragment.querySelector('slot[name="pagination"]');
   if (slotPagination) slotPagination.remove();

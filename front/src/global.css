@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+
   /* Variables Sémantiques (Surface) */
   --color-default: var(--color-white);
   --color-brand: var(--color-sage-500);
@@ -29,21 +30,6 @@
   --color-interaction-emphasis: var(--color-sage-800);
 
   --background-image-desktop : var(--back-desktop);
-
-  /* Arrière-plans produits */
-  --background-image-prod-cafe-noisettes: var(--prod-cafe-noisettes);
-  --background-image-prod-chai-latte: var(--prod-chai-latte);
-  --background-image-prod-chocolat-chaud: var(--prod-chocolat-chaud);
-  --background-image-prod-citronnade: var(--prod-citronnade);
-  --background-image-prod-eclair: var(--prod-eclair);
-  --background-image-prod-flan: var(--prod-flan);
-  --background-image-prod-latte-macchiato: var(--prod-latte-macchiato);
-  --background-image-prod-milkshake: var(--prod-milkshake);
-  --background-image-prod-mousse-chocolat: var(--prod-mousse-chocolat);
-  --background-image-prod-orange: var(--prod-orange);
-  --background-image-prod-riz: var(--prod-riz);
-  --background-image-prod-the-glace: var(--prod-the-glace);
-  --background-image-prod-defaut: var(--back-desktop);
 }
 
 /*
@@ -75,6 +61,26 @@
   );
 }
 
+/*
+  Badge d'état de stock : les styles sont pilotés par l'attribut data-stock
+  (epuise, bientot-epuise, en-stock). Aucun style ni classe CSS n'est calculé
+  dans le JavaScript.
+*/
+@utility badge-stock {
+  &[data-stock="epuise"] {
+    background-color: var(--color-content-secondary);
+    color: var(--color-white);
+  }
+  &[data-stock="bientot-epuise"] {
+    background-color: var(--color-strong);
+    color: var(--color-default);
+  }
+  &[data-stock="en-stock"] {
+    background-color: var(--color-brand);
+    color: var(--color-default);
+  }
+}
+
 @layer base {
 
   :root {
@@ -101,20 +107,6 @@
     --color-gold-500: oklch(74.78% 0.0796 85.64);
 
     --back-desktop: linear-gradient(oklch(54.171% 0.00006 271.152 / 0.45), oklch(54.171% 0.00006 271.152 / 0.45)), url('../assets/back/cafeFeuillette-desktop.jpg');
-    
-    /* Chemins des images de produits dans les assets */
-    --prod-cafe-noisettes: url('../assets/produits/cafeNoisettes.jpg');
-    --prod-chai-latte: url('../assets/produits/chaiLatte.jpg');
-    --prod-chocolat-chaud: url('../assets/produits/chocolatChaud.jpg');
-    --prod-citronnade: url('../assets/produits/citronnade.jpg');
-    --prod-eclair: url('../assets/produits/eclair.jpg');
-    --prod-flan: url('../assets/produits/flan.jpg');
-    --prod-latte-macchiato: url('../assets/produits/latteMacchiato.jpg');
-    --prod-milkshake: url('../assets/produits/milkshake.jpg');
-    --prod-mousse-chocolat: url('../assets/produits/mousseChocolat.jpg');
-    --prod-orange: url('../assets/produits/orange.jpg');
-    --prod-riz: url('../assets/produits/riz.jpg');
-    --prod-the-glace: url('../assets/produits/theGlace.jpg');
   }
   
   /* Menus déroulants et barres de défilement natifs, eux aussi en sombre. */

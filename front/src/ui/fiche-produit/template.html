@@ -1,0 +1,82 @@
+<div class="flex flex-col p-10 gap-6 bg-accent rounded-2xl text-default">
+  <!-- En-tête : Catégorie & Titre -->
+  <div>
+    <span class="inline-block text-xs font-semibold uppercase tracking-wider mb-1.5">
+      {{categorie}}
+    </span>
+    <h1 class="text-3xl font-bold tracking-tight md:text-4xl">
+      {{nom}}
+    </h1>
+  </div>
+
+  <!-- Prix affiché clairement -->
+  <div class="flex items-baseline gap-3">
+    <span data-ref="prix-affiche" class="text-3xl font-extrabold tracking-tight ">
+      {{prix}}
+    </span>
+  </div>
+
+  <!-- Description détaillée du produit -->
+  <div class="flex flex-col gap-5 justify-start items-start border-t border-border pt-4">
+    <h2 class="text-sm font-semibold uppercase tracking-wider">Description</h2>
+    <p class="">
+      {{description}}
+    </p>
+  </div>
+
+  <!-- Section Variantes / Options (injectée si existante) -->
+  <div data-ref="section-variantes" class="hidden flex-col gap-2.5 border-t border-border pt-4">
+    <label class="text-sm font-semibold ">Options / Formats</label>
+    <div data-ref="liste-variantes" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <!-- Sélecteur de Quantité & Bouton Ajouter au panier -->
+  <div class="flex flex-col gap-4 border-t border-border pt-6">
+    <div class="flex items-center gap-4">
+      <span class="text-sm font-semibold">Quantité</span>
+      <div class="flex items-center rounded-xl border border-border bg-subtle p-1 shadow-2xs">
+        <button
+          type="button"
+          data-action="diminuer-quantite"
+          aria-label="Diminuer la quantité"
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-default text-content-primary transition hover:bg-neutral-100 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          -
+        </button>
+        <span
+          data-ref="valeur-quantite"
+          class="w-12 text-center text-base font-semibold text-content-primary"
+        >
+          0
+        </span>
+        <button
+          type="button"
+          data-action="augmenter-quantite"
+          aria-label="Augmenter la quantité"
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-default text-content-primary transition hover:bg-neutral-100 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          +
+        </button>
+      </div>
+      <span data-ref="stock-restant" class="text-xs text-content-muted"></span>
+    </div>
+
+    <button
+      type="button"
+      data-action="ajouter-panier"
+      class="mt-2 flex w-full items-center justify-center gap-3 rounded-2xl bg-input px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-input-hover active:scale-[0.99] disabled:bg-disabled disabled:text-content-disabled disabled:pointer-events-none"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 11-1 9" />
+        <path d="m19 11-4-7" />
+        <path d="M2 11h20" />
+        <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
+        <path d="m4.5 15.5 15 0" />
+        <path d="m5 11 4-7" />
+        <path d="m9 11 1 9" />
+      </svg>
+      <span data-ref="texte-bouton-panier">Ajouter au panier</span>
+    </button>
+  </div>
+</div>
+

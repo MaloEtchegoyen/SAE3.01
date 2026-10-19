@@ -1,15 +1,23 @@
-<article data-id="{{id}}" data-stock="{{code_stock}}" class="relative flex h-100 w-full flex-col justify-end overflow-hidden rounded-3xl text-default border border-border">
-  <div
+<article data-id="{{id}}" data-stock="{{code_stock}}" class="group relative flex h-100 w-full flex-col justify-end overflow-hidden rounded-3xl text-default border border-border">
+  <a
+    href="/produit/{{slug}}"
+    data-link
     data-ref="image"
-    role="img"
     aria-label="{{nom}}"
-    class="absolute inset-0 h-full w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105 {{classe_image}}"
-    style="{{style_inline}}"
-  ></div>
-  <div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/20 transition-opacity duration-300 group-hover:opacity-90"></div>
+    class="absolute inset-0 h-full w-full overflow-hidden"
+  >
+    <img
+      src="{{image_url}}"
+      alt="{{nom}}"
+      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
+  </a>
+  <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/20 transition-opacity duration-300 group-hover:opacity-90"></div>
   <div class="w-full z-10 flex justify-between p-4">
     <h3 class="mb-2 text-lg font-bold leading-snug tracking-tight drop-shadow-sm line-clamp-2">
-      {{nom}}
+      <a href="/produit/{{slug}}" data-link class="hover:underline transition-opacity">
+        {{nom}}
+      </a>
     </h3>
       <span class="text-xl tracking-tight drop-shadow-sm">
         {{prix}}
@@ -19,7 +27,8 @@
       <button class="text-center px-5 p-2 rounded-md bg-input hover:bg-input-hover">Ajouter au panier</button>
     <span
       data-ref="badge-stock"
-      class="inline-flex items-center border-border border rounded-md px-5 text-xs font-semibold tracking-wide shadow-xs {{classe_stock}}"
+      data-stock="{{code_stock}}"
+      class="badge-stock inline-flex items-center border border-border rounded-md px-5 text-xs font-semibold tracking-wide shadow-xs"
     >
       {{etat_stock}}
     </span>
