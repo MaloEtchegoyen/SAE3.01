@@ -34,6 +34,7 @@ return [
     'GET    /api/admin/products/detail'            => [ProductController::class, 'detail'],
     'POST   /api/admin/products'                   => [ProductController::class, 'creer'],
     'POST   /api/admin/products/modifier'          => [ProductController::class, 'modifier'],
+    'PUT    /api/admin/products/modifier'          => [ProductController::class, 'modifier'],
     'PUT    /api/admin/products'                   => [ProductController::class, 'modifier'],
     'DELETE /api/admin/products'                   => [ProductController::class, 'supprimer'],
 
