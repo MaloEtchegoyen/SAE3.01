@@ -1,4 +1,4 @@
-import { htmlToFragment } from "../../lib/utils.js";
+import { escapeHtml, htmlToFragment } from "../../lib/utils.js";
 import logoUrl from "../../../assets/logo/logo-cafe-feuillette-tours.svg";
 import template from "./template.html?raw";
 
@@ -12,22 +12,31 @@ import template from "./template.html?raw";
  */
 let HeaderView = {
   html: function (data = {}) {
-    const nb = data.nbArticles ?? data.nb ?? 0;
+    let nb = data.nbArticles ?? data.nb ?? 0;
+    let connecte = Boolean(data.connecte);
+    let libelleCompte = connecte
+      ? (data.utilisateur ? `Mon compte` : "Mon compte")
+      : "Connexion";
+    let lienCompte = connecte ? "/compte" : "/connexion";
+
     return template
       .replace("{{nb}}", String(nb))
+      .replace("{{libelleCompte}}", libelleCompte)
+      .replace("{{lienCompte}}", lienCompte)
       .replace('data-ref="logo"', `data-ref="logo" src="${logoUrl}"`);
   },
 
   dom: function (data = {}, actions = {}) {
-    const nb = data.nbArticles ?? data.nb ?? 0;
-    const html = template
-      .replace("{{nb}}", String(nb))
-      .replace('data-ref="logo"', `data-ref="logo" src="${logoUrl}"`);
+    let html = HeaderView.html(data);
     let fragment = htmlToFragment(html);
 
     let btnLogout = fragment.querySelector('[data-action="logout"]');
-    if (btnLogout && typeof actions?.onLogout === "function") {
-      btnLogout.addEventListener("click", actions.onLogout);
+    if (btnLogout) {
+      if (data.connecte && typeof actions?.onLogout === "function") {
+        btnLogout.addEventListener("click", actions.onLogout);
+      } else {
+        btnLogout.remove();
+      }
     }
 
     return fragment;

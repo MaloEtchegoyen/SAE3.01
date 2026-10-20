@@ -16,8 +16,8 @@ import template from "./template.html?raw";
  * @returns {{ texte: string, code: string }}
  */
 function calculerEtatStock(stock, seuilAlerte = 5) {
-  const quantite = Number(stock ?? 0);
-  const seuil = Number(seuilAlerte ?? 5);
+  let quantite = Number(stock ?? 0);
+  let seuil = Number(seuilAlerte ?? 5);
 
   if (quantite <= 0) {
     return {
@@ -49,7 +49,7 @@ function calculerEtatStock(stock, seuilAlerte = 5) {
 function resoudreUrlImage(sourceImage) {
   if (!sourceImage || typeof sourceImage !== "string") return placeholderImg;
 
-  const nettoyee = sourceImage.trim();
+  let nettoyee = sourceImage.trim();
   if (!nettoyee) return placeholderImg;
 
   if (
@@ -65,9 +65,9 @@ function resoudreUrlImage(sourceImage) {
     return nettoyee;
   }
 
-  const nomFichier = nettoyee.includes("/") ? nettoyee.split("/").pop() : nettoyee;
-  const base = import.meta.env.BASE_URL || "/";
-  const racine = base.endsWith("/") ? base : `${base}/`;
+  let nomFichier = nettoyee.includes("/") ? nettoyee.split("/").pop() : nettoyee;
+  let base = import.meta.env.BASE_URL || "/";
+  let racine = base.endsWith("/") ? base : `${base}/`;
   return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
 }
 
@@ -99,10 +99,10 @@ let CarteProduitView = {
    * @returns {string}
    */
   html: function (produit = {}) {
-    const stockInfo = calculerEtatStock(produit.stock, produit.seuil_alerte);
-    const sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
-    const urlExplicite = resoudreUrlImage(sourceImage);
-    const slug = slugifier(produit.nom || produit.titre || "");
+    let stockInfo = calculerEtatStock(produit.stock, produit.seuil_alerte);
+    let sourceImage = produit.image_url || produit.imageUrl || produit.url || null;
+    let urlExplicite = resoudreUrlImage(sourceImage);
+    let slug = slugifier(produit.nom || produit.titre || "");
 
     return genericRenderer(template, {
       id: produit.id ?? "",
@@ -137,8 +137,8 @@ let CarteProduitView = {
    * @returns {DocumentFragment}
    */
   dom: function (produit = {}, actions = {}) {
-    const fragment = htmlToFragment(CarteProduitView.html(produit));
-    const article = fragment.querySelector("article");
+    let fragment = htmlToFragment(CarteProduitView.html(produit));
+    let article = fragment.querySelector("article");
 
     if (article && typeof actions?.onClick === "function") {
       article.addEventListener("click", () => actions.onClick(produit));

@@ -53,20 +53,20 @@ ProductData.fetchDetail = async function (id) {
 ProductData.fetchBySlugOrId = async function (slugOuId) {
   if (!slugOuId) return null;
 
-  const produits = await ProductData.fetchAll();
+  let produits = await ProductData.fetchAll();
   if (!Array.isArray(produits) || produits.length === 0) {
     return null;
   }
 
-  const strCible = String(slugOuId).trim().toLowerCase();
-  const idCible = Number(slugOuId);
+  let strCible = String(slugOuId).trim().toLowerCase();
+  let idCible = Number(slugOuId);
 
   // Recherche par ID direct ou par comparaison du nom / slug
   let produitTrouve = produits.find((p) => {
     if (!Number.isNaN(idCible) && Number(p.id) === idCible) {
       return true;
     }
-    const slugProduit = (p.nom || "")
+    let slugProduit = (p.nom || "")
       .toLowerCase()
       .trim()
       .replaceAll("é", "e")
@@ -91,7 +91,7 @@ ProductData.fetchBySlugOrId = async function (slugOuId) {
   }
 
   try {
-    const detail = await ProductData.fetchDetail(produitTrouve.id);
+    let detail = await ProductData.fetchDetail(produitTrouve.id);
     return {
       ...produitTrouve,
       ...detail,
@@ -169,7 +169,7 @@ ProductData.create = async function (donnees) {
   }
 
   if (Array.isArray(donnees?.fichiers) && donnees.fichiers.length > 0) {
-    const formData = new FormData();
+    let formData = new FormData();
     formData.append("nom", donnees.nom ?? "");
     formData.append("prix", String(donnees.prix ?? 0));
     if (donnees.category_id !== null && donnees.category_id !== undefined && donnees.category_id !== "") {
@@ -220,7 +220,7 @@ ProductData.update = async function (id, donnees) {
   }
 
   if (Array.isArray(donnees?.fichiers) && donnees.fichiers.length > 0) {
-    const formData = new FormData();
+    let formData = new FormData();
     formData.append("_method", "PUT");
     formData.append("id", String(id));
     formData.append("nom", donnees.nom ?? "");
@@ -273,7 +273,7 @@ ProductData.addImage = async function (donnees) {
   }
 
   if (donnees && typeof File !== "undefined" && donnees.fichier instanceof File) {
-    const formData = new FormData();
+    let formData = new FormData();
     formData.append("product_id", String(donnees.product_id));
     formData.append("image", donnees.fichier);
     if (donnees.alt) formData.append("alt", donnees.alt);

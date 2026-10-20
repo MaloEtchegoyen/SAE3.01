@@ -27,7 +27,7 @@ let C = {};
  */
 C.charger = async function () {
   try {
-    const [produits, categories] = await Promise.all([
+    let [produits, categories] = await Promise.all([
       ProductData.fetchAllAdmin(),
       ProductData.fetchCategoriesAdmin().catch(() => []),
     ]);
@@ -71,7 +71,7 @@ C.handler_toggle_formulaire = function () {
  * }|number} produitOuId
  */
 C.handler_ouvrir_edition = async function (produitOuId) {
-  const produit =
+  let produit =
     typeof produitOuId === "object" && produitOuId !== null
       ? produitOuId
       : (M.produits || []).find((p) => p.id === Number(produitOuId));
@@ -84,7 +84,7 @@ C.handler_ouvrir_edition = async function (produitOuId) {
   V.rafraichir();
 
   try {
-    const detail = await ProductData.fetchDetail(produit.id);
+    let detail = await ProductData.fetchDetail(produit.id);
     if (detail && M.produitEnEdition && M.produitEnEdition.id === produit.id) {
       M.produitEnEdition = detail;
       V.rafraichir();
@@ -119,7 +119,7 @@ C.handler_fermer_formulaire = function () {
  */
 C.handler_ajouter_produit = async function (donnees) {
   try {
-    const donneesProduit = {
+    let donneesProduit = {
       nom: donnees.nom,
       prix: donnees.prix,
       category_id: donnees.category_id,
@@ -129,7 +129,7 @@ C.handler_ajouter_produit = async function (donnees) {
       fichiers: donnees.fichiers,
       image_principale_index: donnees.image_principale_index,
     };
-    const reponse = await ProductData.create(donneesProduit);
+    let reponse = await ProductData.create(donneesProduit);
     M.message = {
       type: "succes",
       texte: reponse?.message || "Produit créé avec succès.",
@@ -171,7 +171,7 @@ C.handler_annuler_suppression = function () {
  */
 C.handler_confirmer_suppression = async function (id) {
   try {
-    const reponse = await ProductData.delete(id);
+    let reponse = await ProductData.delete(id);
     M.message = {
       type: "succes",
       texte: reponse?.message || "Produit supprimé avec succès.",
@@ -207,11 +207,11 @@ C.handler_confirmer_suppression = async function (id) {
  * }} donnees
  */
 C.handler_modifier_produit = async function (donnees) {
-  const id = donnees.id || M.produitEnEdition?.id;
+  let id = donnees.id || M.produitEnEdition?.id;
   if (!id) return;
 
   try {
-    const donneesProduit = {
+    let donneesProduit = {
       nom: donnees.nom,
       prix: donnees.prix,
       category_id: donnees.category_id,
@@ -223,7 +223,7 @@ C.handler_modifier_produit = async function (donnees) {
       image_principale_id: donnees.image_principale_id,
       image_principale_index: donnees.image_principale_index,
     };
-    const reponse = await ProductData.update(id, donneesProduit);
+    let reponse = await ProductData.update(id, donneesProduit);
     M.message = {
       type: "succes",
       texte: reponse?.message || "Produit mis à jour avec succès.",

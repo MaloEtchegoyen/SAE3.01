@@ -7,10 +7,13 @@ import { AdminProduitsPage } from "./pages/admin-produits/page.js";
 import { ConnexionAdminPage } from "./pages/connexion-admin/page.js";
 import { DetailProduitPage } from "./pages/detail-produit/page.js";
 import { PanierPage } from "./pages/panier/page.js";
+import { ComptePage } from "./pages/compte/page.js";
+import { ConnexionPage } from "./pages/connexion/page.js";
 import { The404Page } from "./pages/404/page.js";
+import { AuthData } from "./data/auth.js";
 
 // base : chemin du projet sur le serveur (BASE dans vite.config.js).
-const router = new Router("app", { base: import.meta.env.BASE_URL });
+let router = new Router("app", { base: import.meta.env.BASE_URL });
 
 router.addLayout("/", RootLayout);
 router.addLayout("/admin", AdminLayout);
@@ -20,12 +23,17 @@ router.addRoute("/categorie", CataloguePage);
 router.addRoute("/categorie/:slug", CataloguePage);
 router.addRoute("/produit/:slug", DetailProduitPage);
 router.addRoute("/panier", PanierPage);
+router.addRoute("/compte", ComptePage);
+router.addRoute("/connexion", ConnexionPage);
 router.addRoute("/connexion-admin", ConnexionAdminPage, { useLayout: false });
 router.addRoute("/admin", AdminPage);
 router.addRoute("/admin/produits", AdminProduitsPage);
 
 // En dernier : toute adresse qui ne correspond à aucune route.
 router.addRoute("*", The404Page);
+
+// Vérifier et synchroniser la session dès le démarrage de l'application
+AuthData.verifierSession();
 
 // Démarrer le routeur
 router.start();

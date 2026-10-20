@@ -25,17 +25,17 @@ let ListePanierView = {
       return htmlToFragment(videTemplate);
     }
 
-    const fragment = htmlToFragment(template);
-    const conteneurLignes = fragment.querySelector('[data-ref="liste-lignes"]');
+    let fragment = htmlToFragment(template);
+    let conteneurLignes = fragment.querySelector('[data-ref="liste-lignes"]');
 
     articles.forEach((article) => {
-      const qte = Number(article.quantite || 1);
-      const prixUnitaire = Number(article.prix || 0);
-      const totalLigne = qte * prixUnitaire;
-      const imageUrl = resoudreUrlImage(article.image);
-      const optionNom = article.nomVariante ? String(article.nomVariante) : "";
+      let qte = Number(article.quantite || 1);
+      let prixUnitaire = Number(article.prix || 0);
+      let totalLigne = qte * prixUnitaire;
+      let imageUrl = resoudreUrlImage(article.image);
+      let optionNom = article.nomVariante ? String(article.nomVariante) : "";
 
-      const ligneHtml = genericRenderer(ligneTemplate, {
+      let ligneHtml = genericRenderer(ligneTemplate, {
         cle: article.cle,
         nom: article.nom,
         option: optionNom,
@@ -46,12 +46,12 @@ let ListePanierView = {
         image_url: imageUrl,
       });
 
-      const ligneFragment = htmlToFragment(ligneHtml);
-      const articleEl = ligneFragment.firstElementChild;
+      let ligneFragment = htmlToFragment(ligneHtml);
+      let articleEl = ligneFragment.firstElementChild;
 
-      const btnDiminuer = articleEl.querySelector('[data-action="diminuer"]');
-      const btnAugmenter = articleEl.querySelector('[data-action="augmenter"]');
-      const btnSupprimer = articleEl.querySelector('[data-action="supprimer"]');
+      let btnDiminuer = articleEl.querySelector('[data-action="diminuer"]');
+      let btnAugmenter = articleEl.querySelector('[data-action="augmenter"]');
+      let btnSupprimer = articleEl.querySelector('[data-action="supprimer"]');
 
       if (btnDiminuer) {
         btnDiminuer.disabled = qte <= 1;
@@ -63,7 +63,7 @@ let ListePanierView = {
       }
 
       if (btnAugmenter) {
-        const stockMax = Number(article.stockMax || 99);
+        let stockMax = Number(article.stockMax || 99);
         btnAugmenter.disabled = qte >= stockMax;
         btnAugmenter.addEventListener("click", () => {
           if (qte < stockMax) {

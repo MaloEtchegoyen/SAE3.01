@@ -24,18 +24,18 @@ let FicheProduitView = {
    * @returns {DocumentFragment}
    */
   dom: function (donnees = {}, actions = {}) {
-    const produit = donnees.produit || {};
-    const varianteActive = donnees.varianteActive || null;
-    const quantite = Math.max(0, Number(donnees.quantite ?? 0));
+    let produit = donnees.produit || {};
+    let varianteActive = donnees.varianteActive || null;
+    let quantite = Math.max(0, Number(donnees.quantite ?? 0));
 
     // Détermination du prix et du stock selon variante ou produit de base
-    const prixActif = varianteActive?.prix !== undefined ? varianteActive.prix : produit.prix;
-    const stockDisponible = Number(
+    let prixActif = varianteActive?.prix !== undefined ? varianteActive.prix : produit.prix;
+    let stockDisponible = Number(
       varianteActive?.stock !== undefined ? varianteActive.stock : (produit.stock ?? 0)
     );
-    const estEpuise = stockDisponible <= 0;
+    let estEpuise = stockDisponible <= 0;
 
-    const htmlString = genericRenderer(template, {
+    let htmlString = genericRenderer(template, {
       nom: produit.nom || "Produit sans nom",
       categorie: produit.categorie || "Café Feuillette",
       prix: formaterPrix(prixActif),
@@ -44,15 +44,15 @@ let FicheProduitView = {
         "Ce produits ne possède pas encore de description.",
     });
 
-    const fragment = htmlToFragment(htmlString);
+    let fragment = htmlToFragment(htmlString);
 
     // Sélecteur de quantité
-    const valQuantite = fragment.querySelector('[data-ref="valeur-quantite"]');
-    const btnDiminuer = fragment.querySelector('[data-action="diminuer-quantite"]');
-    const btnAugmenter = fragment.querySelector('[data-action="augmenter-quantite"]');
-    const spanStock = fragment.querySelector('[data-ref="stock-restant"]');
-    const btnAjouter = fragment.querySelector('[data-action="ajouter-panier"]');
-    const txtBouton = fragment.querySelector('[data-ref="texte-bouton-panier"]');
+    let valQuantite = fragment.querySelector('[data-ref="valeur-quantite"]');
+    let btnDiminuer = fragment.querySelector('[data-action="diminuer-quantite"]');
+    let btnAugmenter = fragment.querySelector('[data-action="augmenter-quantite"]');
+    let spanStock = fragment.querySelector('[data-ref="stock-restant"]');
+    let btnAjouter = fragment.querySelector('[data-action="ajouter-panier"]');
+    let txtBouton = fragment.querySelector('[data-ref="texte-bouton-panier"]');
 
     if (valQuantite) {
       valQuantite.textContent = String(quantite);
@@ -102,21 +102,21 @@ let FicheProduitView = {
     }
 
     // Variantes / formats si le produit en comporte
-    const sectionVariantes = fragment.querySelector('[data-ref="section-variantes"]');
-    const listeVariantes = fragment.querySelector('[data-ref="liste-variantes"]');
-    const variantes = Array.isArray(produit.variantes) ? produit.variantes : [];
+    let sectionVariantes = fragment.querySelector('[data-ref="section-variantes"]');
+    let listeVariantes = fragment.querySelector('[data-ref="liste-variantes"]');
+    let variantes = Array.isArray(produit.variantes) ? produit.variantes : [];
 
     if (variantes.length > 0 && sectionVariantes && listeVariantes) {
       sectionVariantes.classList.remove("hidden");
       sectionVariantes.classList.add("flex");
 
       variantes.forEach((variante) => {
-        const estChoisie =
+        let estChoisie =
           varianteActive?.id !== undefined
             ? Number(varianteActive.id) === Number(variante.id)
             : false;
 
-        const btnVar = document.createElement("button");
+        let btnVar = document.createElement("button");
         btnVar.type = "button";
         btnVar.className = `px-3.5 py-1.5 rounded-xl border text-sm font-medium transition cursor-pointer ${
           estChoisie

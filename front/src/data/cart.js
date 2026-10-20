@@ -78,13 +78,13 @@ let CartData = {
   ajouterArticle({ produit, quantite = 1, variante = null }) {
     if (!produit?.id) return lireStockage();
 
-    const articles = lireStockage();
-    const cle = variante?.id ? `${produit.id}_${variante.id}` : `${produit.id}_base`;
-    const existant = articles.find((item) => item.cle === cle);
+    let articles = lireStockage();
+    let cle = variante?.id ? `${produit.id}_${variante.id}` : `${produit.id}_base`;
+    let existant = articles.find((item) => item.cle === cle);
 
-    const prix = Number(variante?.prix ?? produit.prix ?? 0);
-    const stock = Number(variante?.stock ?? produit.stock ?? 99);
-    const qte = Math.max(1, Number(quantite || 1));
+    let prix = Number(variante?.prix ?? produit.prix ?? 0);
+    let stock = Number(variante?.stock ?? produit.stock ?? 99);
+    let qte = Math.max(1, Number(quantite || 1));
 
     if (existant) {
       existant.quantite = stock > 0 ? Math.min(existant.quantite + qte, stock) : existant.quantite + qte;
@@ -116,13 +116,13 @@ let CartData = {
    * @returns {Array<object>} Le nouveau panier
    */
   modifierQuantite(cle, nouvelleQuantite) {
-    const qte = Number(nouvelleQuantite);
+    let qte = Number(nouvelleQuantite);
     if (qte <= 0) return CartData.supprimerArticle(cle);
 
-    const articles = lireStockage();
-    const article = articles.find((item) => item.cle === cle);
+    let articles = lireStockage();
+    let article = articles.find((item) => item.cle === cle);
     if (article) {
-      const max = article.stockMax > 0 ? article.stockMax : 99;
+      let max = article.stockMax > 0 ? article.stockMax : 99;
       article.quantite = Math.min(Math.max(1, qte), max);
       ecrireStockage(articles);
     }
@@ -136,7 +136,7 @@ let CartData = {
    * @returns {Array<object>} Le nouveau panier
    */
   supprimerArticle(cle) {
-    const articles = lireStockage().filter((item) => item.cle !== cle);
+    let articles = lireStockage().filter((item) => item.cle !== cle);
     ecrireStockage(articles);
     return articles;
   },

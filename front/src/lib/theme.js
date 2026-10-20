@@ -7,7 +7,7 @@
  * la requête SQL et voyagent donc dans des cookies.
  */
 export function basculerTheme() {
-  const sombre = document.documentElement.classList.toggle("theme-dark");
+  let sombre = document.documentElement.classList.toggle("theme-dark");
 
   try {
     localStorage.setItem("theme", sombre ? "sombre" : "clair");

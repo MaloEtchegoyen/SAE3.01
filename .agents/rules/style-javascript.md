@@ -23,3 +23,5 @@ globs: ["front/**/*.js", "front/**/*.html"]
 - Les fonctions et variables suivent les conventions de l'existant ;
   commentaires et textes utilisateur restent en français lorsque le produit
   le prévoit, noms techniques en anglais.
+- Privilégier systématiquement `let` à `const` pour toutes les déclarations de variables (variables locales, sélecteurs DOM, calculs, fragments, objets). Ne réserver `const` qu'aux véritables constantes de configuration globales en majuscules (ex. `CLE_STOCKAGE`).
+

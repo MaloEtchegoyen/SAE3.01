@@ -78,21 +78,21 @@ let FormulaireProduitView = {
     let imagesSelectionnees = []; // Array<{ url: string, nom: string, file?: File, existante?: boolean, id?: number }>
 
     if (data.produit) {
-      const base = import.meta.env.BASE_URL || "/";
-      const racine = base.endsWith("/") ? base : `${base}/`;
+      let base = import.meta.env.BASE_URL || "/";
+      let racine = base.endsWith("/") ? base : `${base}/`;
 
-      const construireUrlImage = function (source) {
+      let construireUrlImage = function (source) {
         if (!source) return "";
         if (source.startsWith("http://") || source.startsWith("https://") || source.startsWith("data:") || source.startsWith("blob:")) {
           return source;
         }
-        const nomFichier = source.includes("/") ? source.split("/").pop() : source;
+        let nomFichier = source.includes("/") ? source.split("/").pop() : source;
         return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
       };
 
       if (Array.isArray(data.produit.images) && data.produit.images.length > 0) {
         imagesSelectionnees = data.produit.images.slice(0, 4).map((img) => {
-          const nom = img.url || "";
+          let nom = img.url || "";
           return {
             url: construireUrlImage(nom),
             nom,
@@ -101,7 +101,7 @@ let FormulaireProduitView = {
           };
         });
       } else if (data.produit.image_url) {
-        const nom = data.produit.image_url;
+        let nom = data.produit.image_url;
         imagesSelectionnees = [
           {
             url: construireUrlImage(nom),
@@ -306,7 +306,7 @@ let FormulaireProduitView = {
       let imagePrincipaleIndex = -1;
 
       if (imagesSelectionnees.length > 0) {
-        const premiere = imagesSelectionnees[0];
+        let premiere = imagesSelectionnees[0];
         if (premiere.existante && premiere.id) {
           imagePrincipaleId = premiere.id;
         } else if (premiere.file instanceof File) {

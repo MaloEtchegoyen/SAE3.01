@@ -68,8 +68,8 @@ let BarreOutilsView = {
     conteneurCategories.appendChild(btnTous);
 
     // Liens pour chaque catégorie
-    const categories = Array.isArray(data.categories) ? data.categories : [];
-    for (const cat of categories) {
+    let categories = Array.isArray(data.categories) ? data.categories : [];
+    for (let cat of categories) {
       let lien = document.createElement("a");
       let slug = cat.slug || String(cat.id);
       lien.href = `/categorie/${slug}`;

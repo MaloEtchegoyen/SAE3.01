@@ -28,13 +28,13 @@ let C = {};
  */
 C.charger = async function () {
   try {
-    const [produits, categories] = await Promise.all([
+    let [produits, categories] = await Promise.all([
       ProductData.fetchAll(),
       ProductData.fetchCategories().catch(() => []),
     ]);
 
     M.produits = produits;
-    const categoriesBrutes =
+    let categoriesBrutes =
       Array.isArray(categories) && categories.length > 0
         ? categories
         : C.extraireCategories(produits);
@@ -62,9 +62,9 @@ C.charger = async function () {
  */
 C.extraireCategories = function (produits) {
   if (!Array.isArray(produits)) return [];
-  const mapCategories = new Map();
+  let mapCategories = new Map();
 
-  for (const p of produits) {
+  for (let p of produits) {
     if (p.category_id && p.categorie && !mapCategories.has(p.category_id)) {
       mapCategories.set(p.category_id, {
         id: p.category_id,
@@ -99,8 +99,8 @@ C.obtenirProduitsFiltres = function () {
  * @returns {number|null}
  */
 C.lireCategorieDepuisUrl = function () {
-  const params = new URLSearchParams(window.location.search);
-  const cat = params.get("categorie");
+  let params = new URLSearchParams(window.location.search);
+  let cat = params.get("categorie");
   return cat !== null && cat !== "" ? Number(cat) : null;
 };
 
@@ -115,14 +115,14 @@ C.appliquerParametres = function (params = {}) {
 
   // Rétrocompatibilité : si aucun slug dans l'URL propre, regarder les query params
   if (!slug) {
-    const catQuery = C.lireCategorieDepuisUrl();
+    let catQuery = C.lireCategorieDepuisUrl();
     if (catQuery !== null) {
       slug = String(catQuery);
     }
   }
 
   if (slug) {
-    const cat = M.categories.find(
+    let cat = M.categories.find(
       (c) =>
         (c.slug && c.slug === slug) ||
         slugifier(c.nom) === slug ||
@@ -154,7 +154,7 @@ C.appliquerParametres = function (params = {}) {
  * @param {string|null} slug
  */
 C.synchroniserUrl = function (slug) {
-  const cible = slug ? `/categorie/${slug}` : "/";
+  let cible = slug ? `/categorie/${slug}` : "/";
   navigate(cible);
 };
 
@@ -165,10 +165,10 @@ C.synchroniserUrl = function (slug) {
  */
 C.obtenirCategoriesAvecCompteurs = function () {
   if (!Array.isArray(M.produits)) return [];
-  const compteurs = new Map();
+  let compteurs = new Map();
 
-  for (const p of M.produits) {
-    const catId = Number(p.category_id);
+  for (let p of M.produits) {
+    let catId = Number(p.category_id);
     if (!Number.isNaN(catId)) {
       compteurs.set(catId, (compteurs.get(catId) || 0) + 1);
     }
@@ -194,7 +194,7 @@ C.handler_filtrer_categorie = function (idCategorie, slug = null) {
   }
 
   if (!slug) {
-    const cat = M.categories.find((c) => Number(c.id) === Number(idCategorie));
+    let cat = M.categories.find((c) => Number(c.id) === Number(idCategorie));
     slug = cat ? cat.slug : String(idCategorie);
   }
 
@@ -273,7 +273,7 @@ V.createPageFragment = function () {
     .replaceWith(
       GrilleProduitsView.dom(produitsFiltres, {
         onClick: (produit) => {
-          const slug = slugifier(produit?.nom || "") || String(produit?.id || "");
+          let slug = slugifier(produit?.nom || "") || String(produit?.id || "");
           if (slug) navigate(`/produit/${slug}`);
         },
       })

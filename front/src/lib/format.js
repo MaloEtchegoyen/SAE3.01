@@ -6,8 +6,8 @@
  * 149 -> « 2 h 29 »
  */
 export function formaterDuree(minutes) {
-  const heures = Math.floor(minutes / 60);
-  const restant = minutes % 60;
+  let heures = Math.floor(minutes / 60);
+  let restant = minutes % 60;
 
   if (heures === 0) {
     return `${restant} min`;
@@ -30,7 +30,7 @@ export function formaterNote(note) {
 export function teinteDepuisTexte(texte) {
   let somme = 0;
 
-  for (const caractere of texte) {
+  for (let caractere of texte) {
     somme += caractere.codePointAt(0);
   }
 
@@ -44,7 +44,7 @@ export function teinteDepuisTexte(texte) {
  * @returns {string}
  */
 export function formaterPrix(montant) {
-  const nombre = Number(montant);
+  let nombre = Number(montant);
   return Number.isNaN(nombre) ? "0,00 €" : `${nombre.toFixed(2).replace(".", ",")} €`;
 }
 
