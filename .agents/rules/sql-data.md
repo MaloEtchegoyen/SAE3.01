@@ -5,7 +5,7 @@ globs: ["sql/**/*.sql"]
 
 # Règles SQL métier
 
-- Préserver les décisions métier de `analyse-user-stories.md` :
+- Préserver les décisions métier de [`docs/SAE3.01_Epics.md`](../../docs/SAE3.01_Epics.md) :
   variantes, stock par variante, panier avec `variantId`, prix figé dans les
   lignes de commande, commandes et journal de stock.
 - Utiliser InnoDB, `utf8mb4`, clés étrangères et contraintes explicites.
