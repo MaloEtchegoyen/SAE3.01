@@ -7,7 +7,7 @@ description: Ajoute une fonctionnalité front au site click & collect Café Feui
 
 ## Étapes obligatoires
 
-1. Identifier l'US concernée dans `analyse-user-stories.md` et vérifier ses
+1. Identifier l'US concernée dans `docs/SAE3.01_Epics.md` et vérifier ses
    dépendances.
 2. Lire les pages, composants, modules data, routeur et templates concernés.
 3. Présenter un découpage avant d'écrire :
