@@ -60,7 +60,7 @@ C.handler_supprimer = function (cle) {
 };
 
 /**
- * Valide le panier.
+ * Valide le panier et redirige vers la validation finale ou la connexion.
  */
 C.handler_valider_panier = function () {
   if (M.nbArticles === 0) {
@@ -77,12 +77,8 @@ C.handler_valider_panier = function () {
     return;
   }
 
-  let utilisateur = AuthData.obtenirUtilisateur();
-  M.message = {
-    type: "succes",
-    texte: `Merci ${utilisateur.utilisateur || ""} ! Votre commande a été finalisée avec succès.`,
-  };
-  V.rafraichir();
+  // Redirection vers le récapitulatif avant validation explicite (CMD-a)
+  navigate("/validation-commande");
 };
 
 /**
@@ -183,4 +179,3 @@ V.createPageFragment = function () {
 export function PanierPage() {
   return C.init();
 }
-

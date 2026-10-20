@@ -18,9 +18,11 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Controller\AuthController;
 use App\Controller\CatalogueController;
+use App\Controller\OrderController;
 use App\Controller\ProductController;
 use App\Controller\StatsController;
 use App\Model\FilmModel;
+use App\Model\OrderModel;
 use App\Model\ProductModel;
 use App\Model\UserModel;
 
@@ -67,6 +69,7 @@ try {
         AuthController::class      => new AuthController(new UserModel($pdo)),
         StatsController::class     => new StatsController(new ProductModel($pdo)),
         ProductController::class   => new ProductController(new ProductModel($pdo)),
+        OrderController::class     => new OrderController(new OrderModel($pdo)),
     ];
 
     $routes = require __DIR__ . '/src/routes.php';

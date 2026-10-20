@@ -12,8 +12,3 @@ Thumbs.db
 # Dossier SQL et scripts de base de données
 sql/
 *.sql
-
-# Consignes et documentation agents
-AGENTS.md
-agents/
-
