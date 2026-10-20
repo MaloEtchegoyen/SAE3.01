@@ -82,11 +82,17 @@ final class Request
         );
     }
 
+    /**
+     * Retourne la méthode HTTP de la requête (GET, POST, etc.).
+     */
     public function methode(): string
     {
         return $this->methode;
     }
 
+    /**
+     * Retourne le chemin normalisé de la requête relative à l'API.
+     */
     public function chemin(): string
     {
         return $this->chemin;

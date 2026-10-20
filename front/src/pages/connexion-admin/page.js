@@ -79,6 +79,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de connexion spécifique aux administrateurs.
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function ConnexionAdminPage() {
   return C.init();
 }

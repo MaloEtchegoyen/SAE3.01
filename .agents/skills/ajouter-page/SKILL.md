@@ -51,6 +51,7 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
 ### Étape 2 : Créer le template HTML (`front/src/pages/<nom-de-page>/template.html`)
 - Définir le conteneur principal avec les classes Tailwind CSS (sans concaténation dynamique).
 - Placer des `<slot name="message"></slot>` et les slots dédiés aux composants UI.
+- S'assurer que tout lien interne (`<a ...>`) porte l'attribut `data-link` et un `href` absolu à la route interne (ex. `<a href="/" data-link>Retour</a>`) pour être intercepté par le routeur.
 
 ### Étape 3 : Créer le contrôleur et la vue (`front/src/pages/<nom-de-page>/page.js`)
 - Suivre scrupuleusement le squelette canonique ci-dessous.

@@ -199,6 +199,12 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de confirmation d'une commande validée.
+ *
+ * @param {object} [params={}] Paramètres de route
+ * @returns {Promise<DocumentFragment>}
+ */
 export function ConfirmationCommandePage(params) {
   return C.init(params);
 }

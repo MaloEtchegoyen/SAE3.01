@@ -181,6 +181,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de profil et historique de compte utilisateur.
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function ComptePage() {
   return C.init();
 }

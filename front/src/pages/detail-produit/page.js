@@ -296,6 +296,12 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de détail d'un produit (galerie d'images, sélection de variante, ajout au panier).
+ *
+ * @param {object} [params={}] Paramètres de route
+ * @returns {Promise<DocumentFragment>}
+ */
 export function DetailProduitPage(params = {}) {
   return C.init(params);
 }

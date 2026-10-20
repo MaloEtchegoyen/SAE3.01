@@ -176,6 +176,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de gestion du panier client.
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function PanierPage() {
   return C.init();
 }

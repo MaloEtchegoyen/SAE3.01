@@ -88,14 +88,12 @@ final class FilmModel
 
         // MySQL renvoie les nombres sous forme de chaînes. On les convertit
         // ligne par ligne, pour que le JSON contienne bien des nombres.
-        $genres = [];
-
-        foreach ($parGenre as $ligne) {
-            $genres[] = [
-                'genre'  => $ligne['genre'],
+        $genres = array_map(static function (array $ligne): array {
+            return [
+                'genre'  => (string) $ligne['genre'],
                 'nombre' => (int) $ligne['nombre'],
             ];
-        }
+        }, $parGenre);
 
         return [
             'total'        => (int) $global['total'],

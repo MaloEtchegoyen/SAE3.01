@@ -61,6 +61,11 @@ final class CatalogueController
         ];
     }
 
+    /**
+     * Affiche la liste paginée et triée des films en JSON.
+     *
+     * @param Request $requete Requête HTTP entrante.
+     */
     public function index(Request $requete): void
     {
         // Enregistrement : uniquement quand l'utilisateur vient de choisir

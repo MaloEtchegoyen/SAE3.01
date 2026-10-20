@@ -30,9 +30,21 @@ final class Router
         $this->controleurs = $controleurs;
     }
 
+    /**
+     * Analyse la requête entrante et délègue son exécution au contrôleur approprié.
+     *
+     * @param Request $requete Requête HTTP entrante.
+     * @throws RuntimeException Si le contrôleur requis n'est pas instancié.
+     */
     public function traiter(Request $requete): void
     {
-        foreach ($this->routes as $declaration => $cible) {
+        $declarations = array_keys($this->routes);
+        $nbRoutes = count($declarations);
+
+        for ($i = 0; $i < $nbRoutes; $i++) {
+            $declaration = $declarations[$i];
+            $cible = $this->routes[$declaration];
+
             if (self::normaliser($declaration) !== $requete->signature()) {
                 continue;
             }
