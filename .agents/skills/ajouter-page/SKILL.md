@@ -5,13 +5,13 @@ description: Guide pour créer une nouvelle page dynamique front dans le projet 
 
 # Ajouter une nouvelle page front (MVC)
 
-Ce guide décrit la procédure pas-à-pas et les conventions architecturales à respecter pour créer une nouvelle page dynamique dans `front/src/pages/`, conformément à la structure des pages existantes (`catalogue`, `admin`, `admin-produits`).
+Ce guide décrit la procédure pas-à-pas et les conventions architecturales à respecter pour créer une nouvelle page dynamique dans `front/src/pages/`, conformément à la structure des pages existantes (`catalogue`, `admin`, `admin-produits`) et aux spécifications du `README.md`.
 
 ## 1. Structure standard d'une page
 
 Chaque page dynamique dispose de son propre répertoire dans `front/src/pages/<nom-de-page>/` composé de deux fichiers obligatoires :
 
-1. `template.html` : Structure HTML sémantique de la page avec classes Tailwind complètes et des balises `<slot name="...">` pour injecter les composants UI dynamiques et les messages.
+1. `template.html` : Structure HTML sémantique de la page avec classes Tailwind complètes, liens internes portant l'attribut `data-link`, et balises `<slot name="...">` pour injecter les composants UI dynamiques et les messages.
 2. `page.js` : Implémentation du triplet MVC local, strictement isolé et sans pollution du scope global.
 
 ### Organisation interne de `page.js`
@@ -30,26 +30,28 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
 3. **Contrôleur local (`let C = { ... }`)** :
    - `C.charger(...)` : Méthode asynchrone qui appelle les modules de la couche `data/` via `try/catch` et stocke les données dans `M`.
    - Handlers d'actions `C.handler_*` : Fonctions réagissant aux actions utilisateurs reçues de la vue, mettant à jour `M` et appelant systématiquement `V.rafraichir()`.
-   - `C.init()` : Méthode asynchrone appelée au montage de la route. Réinitialise l'état, charge les données initiales, gère les redirections de permissions (via `navigate()`), et renvoie `V.init()`.
+   - `C.init(params)` : Méthode asynchrone appelée au montage de la route. Reçoit d'éventuels paramètres d'URL (`params.id`), réinitialise l'état, charge les données initiales, gère les redirections de permissions (via `navigate()`), et renvoie `V.init()`.
 4. **Vue locale (`let V = { ... }`)** :
    - `V.racine` : Référence vers l'élément DOM racine actuel de la page.
    - `V.init()` : Crée le fragment initial via `V.createPageFragment()`, mémorise `V.racine = fragment.firstElementChild` et retourne le fragment.
    - `V.rafraichir()` : Recrée entièrement le fragment à partir de l'état actuel de `M` (`let fragment = V.createPageFragment()`), remplace l'ancienne racine par `fragment` (`V.racine.replaceWith(fragment)`), et met à jour `V.racine`.
    - `V.createPageFragment()` : Parse le template avec `htmlToFragment(template)`, remplace chaque `<slot name="...">` par le rendu d'un composant (`ComposantView.dom(donnees, callbacks)`), gère la présence ou suppression des slots selon l'état de `M`, et retourne le fragment.
 5. **Export de la page** :
-   - Exporter une fonction unique (ex. `export function NomDeLaPage() { return C.init(); }`).
+   - Exporter une fonction unique (ex. `export function NomDeLaPage(params) { return C.init(params); }`).
 
 ---
 
 ## 2. Démarche pas-à-pas
 
 ### Étape 1 : Analyser le besoin et concevoir la page
-- Déterminer la route de la page (ex: `/mon-compte`, `/commandes`).
+- Déterminer la route de la page (ex: `/mon-compte`, `/produits/:id`).
 - Identifier les modules de données (`front/src/data/`) et composants UI (`front/src/ui/`) nécessaires (les créer ou adapter au préalable si besoin).
 - Définir l'état local nécessaire dans le modèle `M`.
 
 ### Étape 2 : Créer le template HTML (`front/src/pages/<nom-de-page>/template.html`)
 - Définir le conteneur principal avec les classes Tailwind CSS (sans concaténation dynamique).
+- **Navigation interne** : tout lien interne vers une route du site doit obligatoirement comporter l'attribut `data-link` sans le préfixe de base (ex: `<a href="/catalogue" data-link>Retour</a>`).
+- **Aucune boucle ni condition** : le template ne contient aucun `for`, `each` ou `if`. Utiliser des `<slot name="...">` pour les composants UI et les listes.
 - Placer des `<slot name="message"></slot>` et les slots dédiés aux composants UI.
 - S'assurer que tout lien interne (`<a ...>`) porte l'attribut `data-link` et un `href` absolu à la route interne (ex. `<a href="/" data-link>Retour</a>`) pour être intercepté par le routeur.
 
@@ -63,10 +65,13 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
   ```javascript
   import { MaNouvellePage } from "./pages/ma-nouvelle-page/page.js";
   ```
-- Ajouter la route au routeur avec ou sans layout :
+- Ajouter la route au routeur avec ou sans layout (**toujours avant la route 404 `router.addRoute("*", The404Page)`**) :
   ```javascript
   // Avec le layout par défaut (RootLayout) :
   router.addRoute("/ma-nouvelle-page", MaNouvellePage);
+
+  // Avec un paramètre dynamique :
+  router.addRoute("/ma-nouvelle-page/:id", MaNouvellePage);
 
   // Ou sous un layout spécifique (ex: /admin) :
   router.addRoute("/admin/ma-page", MaNouvellePage);
@@ -76,7 +81,7 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
   ```
 
 ### Étape 5 : Contrôler et valider
-- Exécuter la vérification architecturale : `node .agents/skills/verifier-mvc/scripts/check-mvc.js`.
+- Exécuter la vérification architecturale : `node .agents/skills/verifier-mvc/scripts/check-mvc.js .`.
 - Vérifier la compilation : `npm run build` dans le dossier `front`.
 
 ---
@@ -86,6 +91,10 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
 ### Template (`template.html`)
 ```html
 <section class="mx-auto max-w-5xl px-6 pt-10 pb-16">
+  <div class="mb-4">
+    <a href="/catalogue" data-link class="text-sm text-feuillette-or hover:underline">&larr; Retour au catalogue</a>
+  </div>
+
   <h1 class="mb-6 text-2xl font-semibold tracking-tight text-feuillette-charbon">Titre de la Page</h1>
 
   <slot name="message"></slot>
@@ -116,9 +125,9 @@ let C = {};
 /**
  * Chargement des données asynchrones.
  */
-C.charger = async function () {
+C.charger = async function (id = null) {
   try {
-    M.donnees = await MonModuleData.fetch();
+    M.donnees = await MonModuleData.fetch(id);
     M.message = null;
   } catch (erreur) {
     M.donnees = null;
@@ -146,9 +155,9 @@ C.handler_action = async function (parametre) {
 /**
  * Initialisation du contrôleur lors du montage de la route.
  */
-C.init = async function () {
+C.init = async function (params = {}) {
   M.message = null;
-  await C.charger();
+  await C.charger(params.id);
 
   // Redirection d'authentification si requis :
   // if (M.donnees === null) {
@@ -210,8 +219,8 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
-export function MaNouvellePage() {
-  return C.init();
+export function MaNouvellePage(params) {
+  return C.init(params);
 }
 ```
 
@@ -222,7 +231,10 @@ export function MaNouvellePage() {
 - **Séparation MVC stricte** :
   - Aucun appel réseau dans la vue (`V`) ou les composants `ui/` ;
   - Aucun accès au DOM ou rendu HTML dans le modèle (`M`) ou `data/`.
+- **Routage et liens** :
+  - Tout lien interne de navigation porte l'attribut `data-link` ;
+  - Toute nouvelle route dans `main.js` est ajoutée avant `router.addRoute("*", The404Page)`.
 - **Remplacement complet du DOM via `V.rafraichir()`** : Ne pas modifier des éléments DOM au coup par coup dans les contrôleurs, toujours déduire l'affichage de l'état `M`.
 - **Échappement XSS** : Les valeurs dynamiques injectées dans le DOM doivent être échappées (via `escapeHtml()` ou `textContent`).
+- **Templates sans logique** : Jamais de boucles ou conditions dans `template.html`.
 - **Classes CSS Tailwind** : Utiliser des classes Tailwind complètes et statiques, jamais générées par interpolation dynamique de chaînes.
-
