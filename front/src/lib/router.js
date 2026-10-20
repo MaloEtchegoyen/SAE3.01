@@ -33,7 +33,7 @@ class Router {
     // Intercepter les clics sur les liens internes.
     document.addEventListener("click", (e) => {
       // closest : le clic peut viser un élément placé à l'intérieur du lien.
-      const lien = e.target.closest("a[data-link]");
+      let lien = e.target.closest("a[data-link]");
       if (lien === null) return;
 
       // Ctrl/Cmd + clic, clic molette… : on laisse le navigateur ouvrir un
@@ -56,7 +56,7 @@ class Router {
     let matchedLayout = null;
     let longestMatch = 0;
 
-    for (const [prefix, layout] of Object.entries(this.layouts)) {
+    for (let [prefix, layout] of Object.entries(this.layouts)) {
       if (path.startsWith(prefix) && prefix.length > longestMatch) {
         matchedLayout = layout;
         longestMatch = prefix.length;
@@ -82,7 +82,7 @@ class Router {
   pathToRegex(path) {
     if (path === "*") return /.*/;
 
-    const pattern = path
+    let pattern = path
       .replace(/\//g, "\\/")
       .replace(/:(\w+)/g, "([^\\/]+)")
       .replace(/\*/g, ".*");
@@ -92,8 +92,8 @@ class Router {
 
   // Extraire les noms des paramètres : /films/:id -> ["id"]
   extractParams(path) {
-    const params = [];
-    for (const match of path.matchAll(/:(\w+)/g)) {
+    let params = [];
+    for (let match of path.matchAll(/:(\w+)/g)) {
       params.push(match[1]);
     }
     return params;
@@ -101,10 +101,10 @@ class Router {
 
   // Extraire les valeurs des paramètres : /films/12 -> { id: "12" }
   getParams(route, path) {
-    const matches = path.match(route.regex);
+    let matches = path.match(route.regex);
     if (!matches) return {};
 
-    const params = {};
+    let params = {};
     route.keys.forEach((key, i) => {
       params[key] = decodeURIComponent(matches[i + 1]);
     });
@@ -131,15 +131,15 @@ class Router {
 
   // Afficher la page qui correspond à l'adresse courante
   async handleRoute() {
-    const navigation = ++this.navigation;
-    const path = this.routePath(window.location.pathname);
+    let navigation = ++this.navigation;
+    let path = this.routePath(window.location.pathname);
 
-    const route = this.routes.find((r) => r.regex.test(path));
+    let route = this.routes.find((r) => r.regex.test(path));
     if (!route) return;
 
     // Le handler peut renvoyer le contenu directement, ou une promesse (page
     // qui charge des données) : await convient aux deux cas.
-    const content = await route.handler(this.getParams(route, path));
+    let content = await route.handler(this.getParams(route, path));
 
     // Pendant le chargement, l'utilisateur a pu cliquer ailleurs : on
     // n'affiche que la page de la navigation la plus récente.
@@ -155,16 +155,16 @@ class Router {
     // Une page peut renvoyer une chaîne HTML (page statique) : on la
     // convertit en fragment.
     if (!(page instanceof DocumentFragment)) {
-      const template = document.createElement("template");
+      let template = document.createElement("template");
       template.innerHTML = page;
       page = template.content;
     }
 
-    const layoutFn = route.useLayout ? this.findLayout(path) : null;
+    let layoutFn = route.useLayout ? this.findLayout(path) : null;
 
     if (layoutFn) {
       // Le layout renvoie un fragment dont le <slot> sans nom reçoit la page.
-      const layout = layoutFn();
+      let layout = layoutFn();
       layout.querySelector("slot:not([name])").replaceWith(page);
       page = layout;
     }
@@ -178,8 +178,8 @@ class Router {
   // l'adresse réelle (avec la base) pour ouvrir un lien dans un nouvel onglet,
   // et aria-current="page" sur les liens de la page affichée.
   updateLinks(path) {
-    for (const lien of this.root.querySelectorAll("a[data-link]")) {
-      const route = this.routePath(lien.pathname);
+    for (let lien of this.root.querySelectorAll("a[data-link]")) {
+      let route = this.routePath(lien.pathname);
       lien.setAttribute("href", this.url(route));
 
       if (route === path) {

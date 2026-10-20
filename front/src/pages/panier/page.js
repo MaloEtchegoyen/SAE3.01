@@ -1,4 +1,6 @@
 import { CartData } from "../../data/cart.js";
+import { AuthData } from "../../data/auth.js";
+import { navigate } from "../../lib/router.js";
 import { htmlToFragment } from "../../lib/utils.js";
 import { MessageView } from "../../ui/message/index.js";
 import { ListePanierView } from "../../ui/liste-panier/index.js";
@@ -45,7 +47,7 @@ C.handler_modifier_quantite = function (cle, nouvelleQuantite) {
  * @param {string} cle
  */
 C.handler_supprimer = function (cle) {
-  const articleSupprime = M.articles.find((item) => item.cle === cle);
+  let articleSupprime = M.articles.find((item) => item.cle === cle);
   CartData.supprimerArticle(cle);
   C.charger();
   if (articleSupprime) {
@@ -70,9 +72,15 @@ C.handler_valider_panier = function () {
     return;
   }
 
+  if (!AuthData.estConnecte()) {
+    navigate("/connexion");
+    return;
+  }
+
+  let utilisateur = AuthData.obtenirUtilisateur();
   M.message = {
     type: "succes",
-    texte: "Votre panier est prêt ! La finalisation de la commande arrive bientôt.",
+    texte: `Merci ${utilisateur.utilisateur || ""} ! Votre commande a été finalisée avec succès.`,
   };
   V.rafraichir();
 };

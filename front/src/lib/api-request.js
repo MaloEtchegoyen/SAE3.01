@@ -28,7 +28,7 @@ class ErreurApi extends Error {
  * Lève une ErreurApi si le serveur répond par une erreur.
  */
 let request = async function (uri, options) {
-  const response = await fetch(API_URL + uri, options);
+  let response = await fetch(API_URL + uri, options);
 
   let data = null;
   try {

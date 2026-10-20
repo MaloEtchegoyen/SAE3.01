@@ -47,5 +47,48 @@ final class UserModel
             'role'         => (string) $ligne['role'],
         ];
     }
+
+    /**
+     * Crée un nouveau compte utilisateur.
+     *
+     * @param string $login Identifiant ou adresse email.
+     * @param string $motDePasseHache Mot de passe déjà haché en bcrypt.
+     * @param string $role Rôle de l'utilisateur (défaut: 'user').
+     * @return int Identifiant généré de l'utilisateur.
+     */
+    public function creer(string $login, string $motDePasseHache, string $role = 'user'): int
+    {
+        $sql = 'INSERT INTO utilisateur (login, mot_de_passe, role)
+                VALUES (:login, :mot_de_passe, :role)';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'login'        => $login,
+            'mot_de_passe' => $motDePasseHache,
+            'role'         => $role,
+        ]);
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    /**
+     * Met à jour le mot de passe d'un utilisateur (ex: rehachage de mot de passe).
+     *
+     * @param int $id Identifiant de l'utilisateur.
+     * @param string $nouveauHash Nouveau mot de passe haché.
+     */
+    public function mettreAJourMotDePasse(int $id, string $nouveauHash): void
+    {
+        $sql = 'UPDATE utilisateur
+                   SET mot_de_passe = :mot_de_passe
+                 WHERE id = :id';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id'           => $id,
+            'mot_de_passe' => $nouveauHash,
+        ]);
+    }
 }
+
 

@@ -21,34 +21,34 @@ let RecapitulatifPanierView = {
    * @returns {DocumentFragment}
    */
   dom: function (donnees = {}, actions = {}) {
-    const total = Number(donnees.total || 0);
-    const nbArticles = Number(donnees.nbArticles || 0);
-    const estVide = nbArticles === 0;
+    let total = Number(donnees.total || 0);
+    let nbArticles = Number(donnees.nbArticles || 0);
+    let estVide = nbArticles === 0;
 
-    const texteArticles =
+    let texteArticles =
       nbArticles > 1 ? `${nbArticles} produits` : `${nbArticles} produit`;
 
-    const htmlString = genericRenderer(template, {
+    let htmlString = genericRenderer(template, {
       total: formaterPrix(total),
       nb_produits: texteArticles,
       disabled_si_vide: estVide ? "disabled" : "",
     });
 
-    const fragment = htmlToFragment(htmlString);
+    let fragment = htmlToFragment(htmlString);
 
-    const btnValider = fragment.querySelector('[data-action="valider-panier"]');
+    let btnValider = fragment.querySelector('[data-action="valider-panier"]');
     if (btnValider && !estVide) {
       btnValider.addEventListener("click", () => {
         actions?.onValider?.();
       });
     }
 
-    const formPromo = fragment.querySelector('[data-ref="form-code-promo"]');
+    let formPromo = fragment.querySelector('[data-ref="form-code-promo"]');
     if (formPromo) {
       formPromo.addEventListener("submit", (e) => {
         e.preventDefault();
-        const input = formPromo.querySelector('input[name="code"]');
-        const code = input ? input.value.trim() : "";
+        let input = formPromo.querySelector('input[name="code"]');
+        let code = input ? input.value.trim() : "";
         actions?.onAppliquerPromo?.(code);
       });
     }

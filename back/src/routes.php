@@ -19,8 +19,10 @@ use App\Controller\StatsController;
 
 return [
     'GET  /api/films'          => [CatalogueController::class, 'index'],
+    'POST /api/register'       => [AuthController::class,      'register'],
     'POST /api/login'          => [AuthController::class,      'login'],
     'POST /api/logout'         => [AuthController::class,      'logout'],
+    'GET  /api/me'             => [AuthController::class,      'me'],
     'GET  /api/admin/stats'    => [StatsController::class,     'index'],
     // Catalogue public (accessible à tous)
     'GET    /api/products'                         => [ProductController::class, 'catalogue'],

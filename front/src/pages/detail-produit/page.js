@@ -29,7 +29,7 @@ let C = {};
  */
 C.charger = async function (slugOuId) {
   try {
-    const produit = await ProductData.fetchBySlugOrId(slugOuId);
+    let produit = await ProductData.fetchBySlugOrId(slugOuId);
     if (!produit) {
       M.produit = null;
       M.message = {
@@ -64,9 +64,9 @@ C.charger = async function (slugOuId) {
 C.mettreAJourSeo = function (produit) {
   if (!produit || typeof document === "undefined") return;
 
-  const nom = produit.nom || "Produit";
-  const categorie = produit.categorie || "Café Feuillette";
-  const description =
+  let nom = produit.nom || "Produit";
+  let categorie = produit.categorie || "Café Feuillette";
+  let description =
     produit.description ||
     `Découvrez ${nom} de la catégorie ${categorie} chez Café Feuillette. Commandez en click & collect.`;
 
@@ -108,7 +108,7 @@ C.mettreAJourSeo = function (produit) {
     document.head.appendChild(scriptLd);
   }
 
-  const schemaDonnees = {
+  let schemaDonnees = {
     "@context": "https://schema.org/",
     "@type": "Product",
     name: nom,
@@ -145,7 +145,7 @@ C.handler_choisir_variante = function (variante) {
 };
 
 C.handler_ajouter_panier = function (produit, quantite, variante) {
-  const qte = Number(quantite || M.quantite || 1);
+  let qte = Number(quantite || M.quantite || 1);
   if (qte <= 0) {
     M.message = {
       type: "erreur",
@@ -157,7 +157,7 @@ C.handler_ajouter_panier = function (produit, quantite, variante) {
 
   try {
     CartData.ajouterArticle({ produit, quantite: qte, variante });
-    const nomProduit = variante ? `${produit.nom} (${variante.nom})` : produit.nom;
+    let nomProduit = variante ? `${produit.nom} (${variante.nom})` : produit.nom;
     M.message = {
       type: "succes",
       texte: `${qte} × « ${nomProduit} » ajouté(s) à votre panier avec succès !`,
@@ -178,7 +178,7 @@ C.handler_ajouter_panier = function (produit, quantite, variante) {
  * @returns {Promise<DocumentFragment>}
  */
 C.init = async function (params = {}) {
-  const slugOuId = params?.slug || params?.id;
+  let slugOuId = params?.slug || params?.id;
   M.slugOuId = slugOuId;
   M.message = null;
 
@@ -212,53 +212,53 @@ V.rafraichir = function () {
  * @returns {DocumentFragment}
  */
 V.createPageFragment = function () {
-  const p = M.produit || {};
-  const catNom = p.categorie || "Catalogue";
-  const catSlug = slugifier(catNom);
+  let p = M.produit || {};
+  let catNom = p.categorie || "Catalogue";
+  let catSlug = slugifier(catNom);
 
-  const htmlString = genericRenderer(template, {
+  let htmlString = genericRenderer(template, {
     nom: p.nom || "Détail produit",
     categorie: catNom,
   });
 
-  const pageFragment = htmlToFragment(htmlString);
+  let pageFragment = htmlToFragment(htmlString);
 
   // Configuration des liens de navigation retour / catégorie
-  const lienAriane = pageFragment.querySelector('[data-ref="lien-categorie-ariane"]');
-  const lienRetour = pageFragment.querySelector('[data-ref="lien-retour"]');
+  let lienAriane = pageFragment.querySelector('[data-ref="lien-categorie-ariane"]');
+  let lienRetour = pageFragment.querySelector('[data-ref="lien-retour"]');
 
   if (p.category_id && catSlug) {
-    const urlCat = `/categorie/${catSlug}`;
+    let urlCat = `/categorie/${catSlug}`;
     if (lienAriane) lienAriane.setAttribute("href", urlCat);
     if (lienRetour) {
       lienRetour.setAttribute("href", urlCat);
-      const spanTexte = lienRetour.querySelector("span:last-child");
+      let spanTexte = lienRetour.querySelector("span:last-child");
       if (spanTexte) spanTexte.textContent = `Retour aux ${catNom}`;
     }
   } else {
     if (lienAriane) lienAriane.setAttribute("href", "/");
     if (lienRetour) {
       lienRetour.setAttribute("href", "/");
-      const spanTexte = lienRetour.querySelector("span:last-child");
+      let spanTexte = lienRetour.querySelector("span:last-child");
       if (spanTexte) spanTexte.textContent = "Retour au catalogue";
     }
   }
 
   // Slot Message
-  const slotMessage = pageFragment.querySelector('slot[name="message"]');
+  let slotMessage = pageFragment.querySelector('slot[name="message"]');
   if (slotMessage) {
     slotMessage.replaceWith(MessageView.dom(M.message));
   }
 
   // Si aucun produit chargé, supprimer les slots de contenu
   if (!M.produit) {
-    const conteneur = pageFragment.querySelector('[data-ref="conteneur-principal"]');
+    let conteneur = pageFragment.querySelector('[data-ref="conteneur-principal"]');
     if (conteneur) conteneur.remove();
     return pageFragment;
   }
 
   // Slot Galerie
-  const slotGalerie = pageFragment.querySelector('slot[name="galerie"]');
+  let slotGalerie = pageFragment.querySelector('slot[name="galerie"]');
   if (slotGalerie) {
     slotGalerie.replaceWith(
       GalerieProduitView.dom(
@@ -275,7 +275,7 @@ V.createPageFragment = function () {
   }
 
   // Slot Fiche Produit
-  const slotFiche = pageFragment.querySelector('slot[name="fiche"]');
+  let slotFiche = pageFragment.querySelector('slot[name="fiche"]');
   if (slotFiche) {
     slotFiche.replaceWith(
       FicheProduitView.dom(

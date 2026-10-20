@@ -43,9 +43,9 @@ let genericRenderer = function (template, data) {
  * @returns {DocumentFragment}
  */
 function htmlToFragment(htmlString) {
-  const template = document.createElement("template");
+  let template = document.createElement("template");
   template.innerHTML = htmlString.trim(); // trim supprime les espaces inutiles
   return template.content;
 }
 
-export { genericRenderer, htmlToFragment };
+export { escapeHtml, genericRenderer, htmlToFragment };
