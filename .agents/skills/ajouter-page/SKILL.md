@@ -53,6 +53,7 @@ Le fichier `page.js` doit impérativement respecter les sections suivantes dans 
 - **Navigation interne** : tout lien interne vers une route du site doit obligatoirement comporter l'attribut `data-link` sans le préfixe de base (ex: `<a href="/catalogue" data-link>Retour</a>`).
 - **Aucune boucle ni condition** : le template ne contient aucun `for`, `each` ou `if`. Utiliser des `<slot name="...">` pour les composants UI et les listes.
 - Placer des `<slot name="message"></slot>` et les slots dédiés aux composants UI.
+- S'assurer que tout lien interne (`<a ...>`) porte l'attribut `data-link` et un `href` absolu à la route interne (ex. `<a href="/" data-link>Retour</a>`) pour être intercepté par le routeur.
 
 ### Étape 3 : Créer le contrôleur et la vue (`front/src/pages/<nom-de-page>/page.js`)
 - Suivre scrupuleusement le squelette canonique ci-dessous.

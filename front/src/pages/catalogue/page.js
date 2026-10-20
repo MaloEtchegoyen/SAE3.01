@@ -285,6 +285,12 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page publique du catalogue.
+ *
+ * @param {object} [params={}] Paramètres de route
+ * @returns {Promise<DocumentFragment>}
+ */
 export function CataloguePage(params = {}) {
   return C.init(params);
 }

@@ -216,6 +216,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de récapitulatif et validation de commande.
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function ValidationCommandePage() {
   return C.init();
 }

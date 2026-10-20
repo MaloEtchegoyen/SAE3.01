@@ -212,6 +212,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de connexion et inscription utilisateur.
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function ConnexionPage() {
   return C.init();
 }

@@ -128,6 +128,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page d'administration principale (tableau de bord).
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function AdminPage() {
   return C.init();
 }

@@ -365,6 +365,11 @@ V.createPageFragment = function () {
   return pageFragment;
 };
 
+/**
+ * Page de gestion des produits (administration).
+ *
+ * @returns {Promise<DocumentFragment>}
+ */
 export function AdminProduitsPage() {
   return C.init();
 }

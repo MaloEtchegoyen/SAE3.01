@@ -20,6 +20,9 @@ final class StatsController
         $this->produits = $produits;
     }
 
+    /**
+     * Retourne les statistiques d'administration en JSON (réservé aux administrateurs).
+     */
     public function index(): void
     {
         // La session est déjà ouverte par index.php.
