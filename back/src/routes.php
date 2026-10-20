@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controller\AuthController;
 use App\Controller\CatalogueController;
+use App\Controller\OrderController;
 use App\Controller\ProductController;
 use App\Controller\StatsController;
 
@@ -24,6 +25,11 @@ return [
     'POST /api/logout'         => [AuthController::class,      'logout'],
     'GET  /api/me'             => [AuthController::class,      'me'],
     'GET  /api/admin/stats'    => [StatsController::class,     'index'],
+
+    // Commandes (Clients connectés)
+    'POST /api/orders'         => [OrderController::class,     'creer'],
+    'GET  /api/orders/detail'  => [OrderController::class,     'detail'],
+
     // Catalogue public (accessible à tous)
     'GET    /api/products'                         => [ProductController::class, 'catalogue'],
     'GET    /api/categories'                       => [ProductController::class, 'catalogueCategories'],
