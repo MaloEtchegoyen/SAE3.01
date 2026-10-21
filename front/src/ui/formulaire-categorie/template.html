@@ -1,0 +1,52 @@
+<section class="mb-8 rounded-xl bg-strong p-6 text-white shadow-md">
+  <div class="mb-6 flex items-center justify-between border-b border-white/20 pb-4">
+    <h2 data-ref="titre" class="text-xl font-bold tracking-tight text-white">Nouvelle catégorie</h2>
+    <span class="text-xs text-white/70">Les champs marqués d'un * sont obligatoires</span>
+  </div>
+
+  <form class="space-y-5" novalidate>
+    <!-- Nom de la catégorie -->
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-white">
+      Nom de la catégorie *
+      <input
+        name="nom"
+        type="text"
+        required
+        maxlength="100"
+        placeholder="ex. Pâtisseries fines"
+        class="h-10 rounded-lg border border-white/20 bg-white/10 px-3.5 text-sm text-white placeholder-white/50 transition-colors focus:border-white focus:bg-white/20 focus:outline-none"
+      />
+      <span data-ref="erreur-nom" class="hidden text-xs text-red-300"></span>
+    </label>
+
+    <!-- Description de la catégorie -->
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-white">
+      Description de la catégorie
+      <textarea
+        name="description"
+        rows="3"
+        placeholder="Description de la catégorie pour guider les clients..."
+        class="rounded-lg border border-white/20 bg-white/10 p-3 text-sm text-white placeholder-white/50 transition-colors focus:border-white focus:bg-white/20 focus:outline-none"
+      ></textarea>
+      <span class="text-xs text-white/60">Présentation affichée sur le catalogue et les filtres.</span>
+    </label>
+
+    <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+      <button
+        type="button"
+        data-action="annuler"
+        class="inline-flex h-10 items-center justify-center rounded-lg border border-white/20 px-5 text-sm font-medium text-white transition-colors hover:bg-white/10 cursor-pointer"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        data-action="soumettre"
+        class="inline-flex h-10 items-center justify-center rounded-lg bg-input px-6 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-input-hover cursor-pointer"
+      >
+        Enregistrer la catégorie
+      </button>
+    </div>
+  </form>
+</section>
+

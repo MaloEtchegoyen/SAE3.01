@@ -1,0 +1,26 @@
+{
+  "name": "sae3.01",
+  "version": "1.0.0",
+  "description": "Catalogue de films : une API PHP en trois couches (routage / contrôleur / modèle) au-dessus de MySQL, et un front en JavaScript organisé en layouts, pages et composants, avec un routeur côté client.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaloEtchegoyen/SAE3.01.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MaloEtchegoyen/SAE3.01/issues"
+  },
+  "homepage": "https://github.com/MaloEtchegoyen/SAE3.01#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5"
+  }
+}

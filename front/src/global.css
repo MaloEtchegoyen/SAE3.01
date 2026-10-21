@@ -33,10 +33,9 @@
 }
 
 /*
-  Le thème sombre s'active par la classe theme-dark posée sur <html> (voir
-  index.html et lib/theme.js), et non par le réglage du système : c'est ce que
-  déclare cette variante. Une classe préfixée par dark: s'applique donc dès que
-  la page est en thème sombre.
+  La variante dark ne s'applique que via la classe .theme-dark sur <html>.
+  L'application étant uniquement en thème clair, cette classe n'est jamais posée,
+  ce qui neutralise toute règle dark: et évite le basculement automatique via l'OS.
 */
 @custom-variant dark (&:where(.theme-dark, .theme-dark *));
 
@@ -50,14 +49,6 @@
     160deg,
     hsl(var(--teinte) 28% 96%),
     hsl(calc(var(--teinte) + 25) 28% 91%)
-  );
-}
-
-@utility bandeau-sombre {
-  background-image: linear-gradient(
-    160deg,
-    hsl(var(--teinte) 18% 17%),
-    hsl(calc(var(--teinte) + 25) 18% 12%)
   );
 }
 
@@ -108,11 +99,6 @@
 
     --back-desktop: linear-gradient(oklch(54.171% 0.00006 271.152 / 0.45), oklch(54.171% 0.00006 271.152 / 0.45)), url('../assets/back/cafeFeuillette-desktop.jpg');
   }
-  
-  /* Menus déroulants et barres de défilement natifs, eux aussi en sombre. */
-  .theme-dark {
-    color-scheme: dark;
-  }
 
   /* Un seul anneau de focus pour toute l'application, visible uniquement au
      clavier : :focus-visible ne se déclenche pas sur un clic de souris. */
@@ -124,11 +110,4 @@
   button:not(:disabled) {
     cursor: pointer;
   }
-
-
-
-
-
-  
 }
-

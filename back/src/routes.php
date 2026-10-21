@@ -7,6 +7,7 @@ use App\Controller\CatalogueController;
 use App\Controller\OrderController;
 use App\Controller\ProductController;
 use App\Controller\StatsController;
+use App\Controller\CategoryController;
 
 /**
  * Table des routes de l'API.
@@ -38,13 +39,16 @@ return [
 
     // Catalogue public (accessible à tous)
     'GET    /api/products'                         => [ProductController::class, 'catalogue'],
-    'GET    /api/categories'                       => [ProductController::class, 'catalogueCategories'],
+    'GET    /api/categories'                       => [CategoryController::class, 'publicCatalogue'],
     'GET    /api/products/detail'                  => [ProductController::class, 'catalogueDetail'],
     'GET    /api/products/image'                   => [ProductController::class, 'servirImage'],
 
     // Administration - Produits
     'GET    /api/admin/products'                   => [ProductController::class, 'index'],
-    'GET    /api/admin/categories'                 => [ProductController::class, 'categories'],
+    'GET    /api/admin/categories'                 => [CategoryController::class, 'index'],
+    'POST   /api/admin/categories'                 => [CategoryController::class, 'creer'],
+    'PUT    /api/admin/categories'                 => [CategoryController::class, 'modifier'],
+    'DELETE /api/admin/categories'                 => [CategoryController::class, 'supprimer'],
     'GET    /api/admin/products/detail'            => [ProductController::class, 'detail'],
     'POST   /api/admin/products'                   => [ProductController::class, 'creer'],
     'POST   /api/admin/products/modifier'          => [ProductController::class, 'modifier'],

@@ -6,23 +6,15 @@
     <title>SAE301-Starter</title>
     <link rel="stylesheet" href="/src/global.css" />
 
-    <!--
-      Application du thème avant le premier affichage. Script ordinaire et non
-      module : le navigateur l'exécute avant de dessiner la page, qui
-      n'apparaît donc jamais, même brièvement, dans le mauvais thème.
-      Le thème est conservé en localStorage : le serveur n'en a pas besoin.
-    -->
     <script>
       try {
-        if (localStorage.getItem("theme") === "sombre") {
-          document.documentElement.classList.add("theme-dark");
-        }
+        localStorage.removeItem("theme");
       } catch (e) {
-        // localStorage indisponible : on reste en thème clair.
+        // localStorage indisponible
       }
     </script>
   </head>
-  <body class="bg-white text-zinc-950 antialiased dark:bg-zinc-950 dark:text-zinc-50">
+  <body class="bg-white text-zinc-950 antialiased">
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
