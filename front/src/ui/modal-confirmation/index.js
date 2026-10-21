@@ -11,8 +11,10 @@ let ModalConfirmationView = {
    * @param {{
    *   titre?: string,
    *   message?: string,
+   *   corps?: Node|null,
    *   boutonConfirmer?: string,
-   *   boutonAnnuler?: string
+   *   boutonAnnuler?: string,
+   *   masquerConfirmer?: boolean
    * }} data Données textuelles affichées dans la modale.
    * @param {{
    *   surConfirmer?: () => void,
@@ -30,8 +32,19 @@ let ModalConfirmationView = {
       })
     );
 
+    let slotCorps = fragment.querySelector('slot[name="corps"]');
+    if (slotCorps) {
+      if (data.corps) {
+        slotCorps.replaceWith(data.corps);
+      } else {
+        slotCorps.remove();
+      }
+    }
+
     let btnConfirmer = fragment.querySelector('[data-action="confirmer"]');
-    if (btnConfirmer && typeof actions.surConfirmer === "function") {
+    if (data.masquerConfirmer && btnConfirmer) {
+      btnConfirmer.remove();
+    } else if (btnConfirmer && typeof actions.surConfirmer === "function") {
       btnConfirmer.addEventListener("click", () => actions.surConfirmer());
     }
 
@@ -54,4 +67,3 @@ let ModalConfirmationView = {
 };
 
 export { ModalConfirmationView };
-

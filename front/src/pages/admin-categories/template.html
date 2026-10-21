@@ -1,0 +1,35 @@
+<section class="mx-auto max-w-6xl px-6 pt-10 pb-16">
+  <!-- En-tête de la page -->
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Gestion des catégories</h1>
+      <p class="mt-1 text-sm text-white/70">
+        Créez, modifiez et organisez les catégories de produits du catalogue Café Feuillette.
+      </p>
+    </div>
+
+    <div>
+      <button
+        type="button"
+        data-action="toggle-formulaire"
+        class="inline-flex items-center gap-2 rounded-lg bg-input px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-input-hover cursor-pointer"
+      >
+        <span data-ref="icone-toggle">+</span>
+        <span data-ref="texte-toggle">Nouvelle catégorie</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Emplacement du message de notification (succès / erreur) -->
+  <slot name="message"></slot>
+
+  <!-- Emplacement du formulaire de création / édition -->
+  <slot name="formulaire"></slot>
+
+  <!-- Emplacement du tableau des catégories -->
+  <slot name="table"></slot>
+
+  <!-- Emplacement de la modale de confirmation de suppression -->
+  <slot name="modale"></slot>
+</section>
+

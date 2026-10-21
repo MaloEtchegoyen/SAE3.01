@@ -21,6 +21,8 @@ use App\Controller\CatalogueController;
 use App\Controller\OrderController;
 use App\Controller\ProductController;
 use App\Controller\StatsController;
+use App\Controller\CategoryController;
+use App\Model\CategoryModel;
 use App\Model\FilmModel;
 use App\Model\OrderModel;
 use App\Model\ProductModel;
@@ -70,6 +72,7 @@ try {
         StatsController::class     => new StatsController(new ProductModel($pdo)),
         ProductController::class   => new ProductController(new ProductModel($pdo)),
         OrderController::class     => new OrderController(new OrderModel($pdo)),
+        CategoryController::class  => new CategoryController(new CategoryModel($pdo)),
     ];
 
     $routes = require __DIR__ . '/src/routes.php';
