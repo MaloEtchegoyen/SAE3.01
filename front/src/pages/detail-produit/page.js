@@ -15,6 +15,7 @@ let M = {
   slugOuId: null,
   produit: null,
   varianteActive: null,
+  optionsChoisies: {}, // { [optionId]: valeurId }
   quantite: 0,
   indexImage: 0,
   message: null, // { type: "succes" | "erreur" | "info", texte: string }
@@ -44,6 +45,20 @@ C.charger = async function (slugOuId) {
     M.quantite = Number(produit.stock ?? 0) > 0 ? 1 : 0;
     M.indexImage = 0;
     M.message = null;
+
+    // Pré-sélection par défaut des options obligatoires du produit (OPT-c)
+    M.optionsChoisies = {};
+    if (Array.isArray(produit.options)) {
+      let nbOpts = produit.options.length;
+      for (let i = 0; i < nbOpts; i++) {
+        let opt = produit.options[i];
+        if (opt.valeurs && opt.valeurs.length > 0) {
+          if (opt.obligatoire || opt.valeurs.length === 1) {
+            M.optionsChoisies[opt.id] = opt.valeurs[0].id;
+          }
+        }
+      }
+    }
 
     // Mise à jour SEO (Title, Meta description, Schema.org)
     C.mettreAJourSeo(produit);
@@ -144,7 +159,18 @@ C.handler_choisir_variante = function (variante) {
   V.rafraichir();
 };
 
-C.handler_ajouter_panier = function (produit, quantite, variante) {
+C.handler_choisir_option = function (optionId, valeurId) {
+  let opt = M.produit?.options?.find((o) => Number(o.id) === Number(optionId));
+  // Si déjà sélectionné et facultatif, permettre de désélectionner, sinon basculer
+  if (Number(M.optionsChoisies[optionId]) === Number(valeurId) && opt && !opt.obligatoire) {
+    delete M.optionsChoisies[optionId];
+  } else {
+    M.optionsChoisies[optionId] = valeurId;
+  }
+  V.rafraichir();
+};
+
+C.handler_ajouter_panier = function (produit, quantite, optionsChoisies, variante) {
   let qte = Number(quantite || M.quantite || 1);
   if (qte <= 0) {
     M.message = {
@@ -155,9 +181,40 @@ C.handler_ajouter_panier = function (produit, quantite, variante) {
     return;
   }
 
+  // Résolution détaillée des options choisies pour le panier (OPT-c)
+  let optionsSelectionnees = [];
+  let optionsProduit = Array.isArray(produit.options) ? produit.options : [];
+  let nbOpts = optionsProduit.length;
+  for (let i = 0; i < nbOpts; i++) {
+    let opt = optionsProduit[i];
+    let valId = optionsChoisies ? optionsChoisies[opt.id] : M.optionsChoisies[opt.id];
+    if (valId && Array.isArray(opt.valeurs)) {
+      let v = opt.valeurs.find((val) => Number(val.id) === Number(valId));
+      if (v) {
+        optionsSelectionnees.push({
+          optionId: opt.id,
+          optionNom: opt.nom,
+          valeurId: v.id,
+          valeurNom: v.nom,
+          surcout: Number(v.surcout || 0),
+        });
+      }
+    }
+  }
+
   try {
-    CartData.ajouterArticle({ produit, quantite: qte, variante });
-    let nomProduit = variante ? `${produit.nom} (${variante.nom})` : produit.nom;
+    CartData.ajouterArticle({
+      produit,
+      quantite: qte,
+      variante,
+      options: optionsSelectionnees,
+    });
+
+    let resumeOptions = optionsSelectionnees.map((o) => o.valeurNom).join(", ");
+    let nomProduit = resumeOptions
+      ? `${produit.nom} (${resumeOptions})`
+      : (variante ? `${produit.nom} (${variante.nom})` : produit.nom);
+
     M.message = {
       type: "succes",
       texte: `${qte} × « ${nomProduit} » ajouté(s) à votre panier avec succès !`,
@@ -282,12 +339,14 @@ V.createPageFragment = function () {
         {
           produit: M.produit,
           varianteActive: M.varianteActive,
+          optionsChoisies: M.optionsChoisies,
           quantite: M.quantite,
         },
         {
           onAjouterPanier: C.handler_ajouter_panier,
           onChangerQuantite: C.handler_changer_quantite,
           onChoisirVariante: C.handler_choisir_variante,
+          onChoisirOption: C.handler_choisir_option,
         }
       )
     );

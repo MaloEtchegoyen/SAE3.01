@@ -97,6 +97,7 @@ ProductData.fetchBySlugOrId = async function (slugOuId) {
       ...detail,
       images: Array.isArray(detail?.images) ? detail.images : [],
       variantes: Array.isArray(detail?.variantes) ? detail.variantes : [],
+      options: Array.isArray(detail?.options) ? detail.options : [],
     };
   } catch {
     // Si l'endpoint de détail échoue ou n'est pas disponible, renvoyer au moins les infos du catalogue
@@ -104,6 +105,7 @@ ProductData.fetchBySlugOrId = async function (slugOuId) {
       ...produitTrouve,
       images: produitTrouve.image_url ? [{ url: produitTrouve.image_url, est_principale: true }] : [],
       variantes: [],
+      options: [],
     };
   }
 };
@@ -183,6 +185,9 @@ ProductData.create = async function (donnees) {
     if (donnees.image_principale_index !== undefined && donnees.image_principale_index !== null) {
       formData.append("image_principale_index", String(donnees.image_principale_index));
     }
+    if (Array.isArray(donnees.options)) {
+      formData.append("options", JSON.stringify(donnees.options));
+    }
     donnees.fichiers.forEach((fichier) => {
       formData.append("images[]", fichier);
     });
@@ -244,6 +249,9 @@ ProductData.update = async function (id, donnees) {
     if (donnees.image_principale_index !== null && donnees.image_principale_index !== undefined) {
       formData.append("image_principale_index", String(donnees.image_principale_index));
     }
+    if (Array.isArray(donnees.options)) {
+      formData.append("options", JSON.stringify(donnees.options));
+    }
     donnees.fichiers.forEach((fichier) => {
       formData.append("images[]", fichier);
     });
@@ -296,6 +304,32 @@ ProductData.addImage = async function (donnees) {
 ProductData.delete = async function (id, definitif = true) {
   let paramDefinitif = definitif ? "1" : "0";
   return deleteRequest(`admin/products?id=${id}&definitif=${paramDefinitif}`, { id, definitif });
+};
+
+/**
+ * Récupère les options personnalisables d'un produit (administration) :
+ * GET /api/admin/products/options?productId=...
+ *
+ * @param {number} productId
+ * @returns {Promise<Array<object>>}
+ */
+ProductData.fetchOptions = async function (productId) {
+  return getRequest(`admin/products/options?productId=${productId}`);
+};
+
+/**
+ * Supprime une option d'un produit (administration) :
+ * DELETE /api/admin/products/options?id=...&productId=...
+ *
+ * @param {number} optionId
+ * @param {number} productId
+ * @returns {Promise<{ succes: boolean, message: string }>}
+ */
+ProductData.deleteOption = async function (optionId, productId) {
+  return deleteRequest(`admin/products/options?id=${optionId}&productId=${productId}`, {
+    option_id: optionId,
+    product_id: productId,
+  });
 };
 
 export { ProductData };

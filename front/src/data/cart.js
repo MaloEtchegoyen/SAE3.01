@@ -21,6 +21,10 @@ function lireStockage() {
   }
 }
 
+function roundPrix(valeur) {
+  return Math.round(Number(valeur || 0) * 100) / 100;
+}
+
 /**
  * Écrit la liste des articles dans le stockage local du navigateur et notifie les auditeurs.
  *
@@ -65,26 +69,49 @@ let CartData = {
   },
 
   /**
-   * Ajoute un produit (et son éventuelle variante) au panier.
-   * Si l'article existe déjà (même produit + même variante), incrémente la quantité.
+   * Ajoute un produit (et son éventuelle variante ou ses options choisies) au panier.
+   * Si l'article existe déjà (même produit + même variante + mêmes options), incrémente la quantité.
    *
    * @param {{
    *   produit: object,
    *   quantite?: number,
-   *   variante?: object|null
+   *   variante?: object|null,
+   *   options?: Array<{ optionId: number, optionNom: string, valeurId: number, valeurNom: string, surcout: number }>
    * }} params
    * @returns {Array<object>} Le nouveau panier
    */
-  ajouterArticle({ produit, quantite = 1, variante = null }) {
+  ajouterArticle({ produit, quantite = 1, variante = null, options = [] }) {
     if (!produit?.id) return lireStockage();
 
     let articles = lireStockage();
-    let cle = variante?.id ? `${produit.id}_${variante.id}` : `${produit.id}_base`;
+
+    // Construction d'une clé d'unicité tenant compte des options ou de la variante
+    let cle = `${produit.id}_base`;
+    let surcoutOptions = 0;
+    let nomOptions = null;
+
+    if (Array.isArray(options) && options.length > 0) {
+      let idsOptions = options
+        .map((o) => `${o.optionId}:${o.valeurId}`)
+        .sort()
+        .join("_");
+      cle = `${produit.id}_opt_${idsOptions}`;
+      nomOptions = options.map((o) => o.valeurNom).join(", ");
+      options.forEach((o) => {
+        surcoutOptions += Number(o.surcout || 0);
+      });
+    } else if (variante?.id) {
+      cle = `${produit.id}_${variante.id}`;
+    }
+
     let existant = articles.find((item) => item.cle === cle);
 
-    let prix = Number(variante?.prix ?? produit.prix ?? 0);
+    let prixBase = Number(variante?.prix ?? produit.prix ?? 0);
+    let prixFinal = roundPrix(prixBase + surcoutOptions);
     let stock = Number(variante?.stock ?? produit.stock ?? 99);
     let qte = Math.max(1, Number(quantite || 1));
+
+    let libelleVariante = nomOptions || (variante?.nom ? String(variante.nom) : null);
 
     if (existant) {
       existant.quantite = stock > 0 ? Math.min(existant.quantite + qte, stock) : existant.quantite + qte;
@@ -93,9 +120,10 @@ let CartData = {
         cle,
         produitId: produit.id,
         varianteId: variante?.id ?? null,
+        options: Array.isArray(options) ? options : [],
         nom: produit.nom || "Produit",
-        nomVariante: variante?.nom ? String(variante.nom) : null,
-        prix,
+        nomVariante: libelleVariante,
+        prix: prixFinal,
         image: produit.image_url || produit.imageUrl || produit.image || produit.images?.[0]?.url || null,
         quantite: stock > 0 ? Math.min(qte, stock) : qte,
         stockMax: stock > 0 ? stock : 99,

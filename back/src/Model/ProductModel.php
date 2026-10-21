@@ -282,6 +282,7 @@ final class ProductModel
         if ($definitif) {
             $this->pdo->beginTransaction();
             try {
+                $this->pdo->prepare('DELETE FROM product_option WHERE product_id = :id')->execute(['id' => $id]);
                 $this->pdo->prepare('DELETE FROM product_image WHERE product_id = :id')->execute(['id' => $id]);
                 $this->pdo->prepare('DELETE FROM product_variant WHERE product_id = :id')->execute(['id' => $id]);
                 $this->pdo->prepare('DELETE FROM stock_movement WHERE product_id = :id')->execute(['id' => $id]);
@@ -694,5 +695,306 @@ final class ProductModel
                 'actif'        => (int) $ligne['actif'],
             ];
         }, $lignes);
+    }
+
+    /**
+     * Initialise automatiquement les tables product_option et product_option_value si inexistantes.
+     */
+    public function initialiserTablesOptions(): void
+    {
+        try {
+            $this->pdo->exec(
+                "CREATE TABLE IF NOT EXISTS product_option (
+                    id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                    product_id INT(11) NOT NULL,
+                    nom VARCHAR(100) NOT NULL,
+                    type VARCHAR(30) NOT NULL DEFAULT 'radio',
+                    obligatoire TINYINT(1) NOT NULL DEFAULT 1,
+                    ordre INT(11) NOT NULL DEFAULT 0,
+                    PRIMARY KEY (id),
+                    KEY fk_product_option_product (product_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+
+            $this->pdo->exec(
+                "CREATE TABLE IF NOT EXISTS product_option_value (
+                    id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                    option_id INT(10) UNSIGNED NOT NULL,
+                    nom VARCHAR(150) NOT NULL,
+                    surcout DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                    ordre INT(11) NOT NULL DEFAULT 0,
+                    PRIMARY KEY (id),
+                    KEY fk_product_option_value_option (option_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+
+            // Vérifier s'il y a déjà des données, sinon insérer le jeu d'essai
+            $count = (int) $this->pdo->query("SELECT COUNT(*) FROM product_option")->fetchColumn();
+            if ($count === 0) {
+                $this->pdo->exec("
+                    INSERT INTO product_option (id, product_id, nom, type, obligatoire, ordre) VALUES
+                    (1, 1, 'Taille', 'radio', 1, 0),
+                    (2, 1, 'Type de lait', 'radio', 1, 1),
+                    (3, 1, 'Sirop gourmand', 'radio', 0, 2),
+                    (4, 2, 'Taille', 'radio', 1, 0),
+                    (5, 2, 'Type de lait', 'radio', 1, 1),
+                    (6, 6, 'Parfum', 'radio', 1, 0),
+                    (7, 6, 'Chantilly', 'radio', 1, 1),
+                    (8, 8, 'Taille', 'radio', 1, 0);
+
+                    INSERT INTO product_option_value (id, option_id, nom, surcout, ordre) VALUES
+                    (1, 1, 'Simple (Tasse)', 0.00, 0),
+                    (2, 1, 'Double (+0,60 €)', 0.60, 1),
+                    (3, 2, 'Lait entier de vache', 0.00, 0),
+                    (4, 2, 'Lait d\'avoine bio', 0.50, 1),
+                    (5, 2, 'Lait d\'amande', 0.50, 2),
+                    (6, 3, 'Sans sirop', 0.00, 0),
+                    (7, 3, 'Sirop Vanille', 0.50, 1),
+                    (8, 3, 'Sirop Caramel beurre salé', 0.50, 2),
+                    (9, 4, 'Moyen (35 cl)', 0.00, 0),
+                    (10, 4, 'Grand (50 cl)', 0.90, 1),
+                    (11, 5, 'Lait entier', 0.00, 0),
+                    (12, 5, 'Lait d\'avoine', 0.50, 1),
+                    (13, 6, 'Vanille Bourbon', 0.00, 0),
+                    (14, 6, 'Chocolat intense', 0.00, 1),
+                    (15, 6, 'Fraise mara des bois', 0.00, 2),
+                    (16, 7, 'Sans chantilly', 0.00, 0),
+                    (17, 7, 'Avec chantilly maison', 0.60, 1),
+                    (18, 8, 'Verre (33 cl)', 0.00, 0),
+                    (19, 8, 'Bouteille (50 cl)', 1.20, 1);
+                ");
+            }
+        } catch (Throwable) {
+            // Ignorer si les tables existent déjà ou si les droits sont restreints
+        }
+    }
+
+    /**
+     * OPT-c : Liste les options personnalisables et leurs valeurs pour un produit donné.
+     *
+     * @param int $productId
+     * @return array<int, array{
+     *     id: int,
+     *     product_id: int,
+     *     nom: string,
+     *     type: string,
+     *     obligatoire: bool,
+     *     ordre: int,
+     *     valeurs: array<int, array{id: int, option_id: int, nom: string, surcout: float, ordre: int}>
+     * }>
+     */
+    public function listerOptions(int $productId): array
+    {
+        $this->initialiserTablesOptions();
+
+        $stmt = $this->pdo->prepare(
+            'SELECT id, product_id, nom, type, obligatoire, ordre
+               FROM product_option
+              WHERE product_id = :product_id
+              ORDER BY ordre ASC, id ASC'
+        );
+        $stmt->execute(['product_id' => $productId]);
+        $optionsBrutes = $stmt->fetchAll();
+
+        $totalOptions = count($optionsBrutes);
+        if ($totalOptions === 0) {
+            return [];
+        }
+
+        $resultat = [];
+
+        for ($i = 0; $i < $totalOptions; $i++) {
+            $opt = $optionsBrutes[$i];
+            $optId = (int) $opt['id'];
+
+            $stmtVal = $this->pdo->prepare(
+                'SELECT id, option_id, nom, surcout, ordre
+                   FROM product_option_value
+                  WHERE option_id = :option_id
+                  ORDER BY ordre ASC, id ASC'
+            );
+            $stmtVal->execute(['option_id' => $optId]);
+            $valeursBrutes = $stmtVal->fetchAll();
+
+            $valeurs = array_map(static function (array $v): array {
+                return [
+                    'id'        => (int) $v['id'],
+                    'option_id' => (int) $v['option_id'],
+                    'nom'       => (string) $v['nom'],
+                    'surcout'   => (float) $v['surcout'],
+                    'ordre'     => (int) $v['ordre'],
+                ];
+            }, $valeursBrutes);
+
+            $resultat[] = [
+                'id'          => $optId,
+                'product_id'  => (int) $opt['product_id'],
+                'nom'         => (string) $opt['nom'],
+                'type'        => (string) $opt['type'],
+                'obligatoire' => (bool) $opt['obligatoire'],
+                'ordre'       => (int) $opt['ordre'],
+                'valeurs'     => $valeurs,
+            ];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Supprime une option d'un produit.
+     *
+     * @param int $optionId
+     * @param int $productId
+     * @return bool
+     */
+    public function supprimerOption(int $optionId, int $productId): bool
+    {
+        $this->initialiserTablesOptions();
+        $stmt = $this->pdo->prepare('DELETE FROM product_option WHERE id = :id AND product_id = :product_id');
+        return $stmt->execute([
+            'id'         => $optionId,
+            'product_id' => $productId,
+        ]);
+    }
+
+    /**
+     * Synchronise de façon atomique les options et valeurs d'un produit.
+     *
+     * @param int $productId
+     * @param array<int, array{
+     *     id?: int,
+     *     nom: string,
+     *     type?: string,
+     *     obligatoire?: bool|int,
+     *     ordre?: int,
+     *     valeurs?: array<int, array{id?: int, nom: string, surcout?: float|int|string, ordre?: int}>
+     * }> $options
+     * @return void
+     */
+    public function synchroniserOptions(int $productId, array $options): void
+    {
+        $this->initialiserTablesOptions();
+
+        $stmtExistantes = $this->pdo->prepare('SELECT id FROM product_option WHERE product_id = :product_id');
+        $stmtExistantes->execute(['product_id' => $productId]);
+        $idsExistants = $stmtExistantes->fetchAll(PDO::FETCH_COLUMN);
+
+        $idsConserves = [];
+        $totalOptions = count($options);
+
+        for ($i = 0; $i < $totalOptions; $i++) {
+            $opt = $options[$i];
+            $nomOpt = trim((string) ($opt['nom'] ?? ''));
+            if ($nomOpt === '') {
+                continue;
+            }
+
+            $typeOpt = !empty($opt['type']) ? (string) $opt['type'] : 'radio';
+            $obligatoire = !empty($opt['obligatoire']) ? 1 : 0;
+            $ordreOpt = isset($opt['ordre']) ? (int) $opt['ordre'] : $i;
+            $optId = isset($opt['id']) && is_numeric($opt['id']) ? (int) $opt['id'] : 0;
+
+            if ($optId > 0 && in_array($optId, $idsExistants, true)) {
+                $stmtUpdateOpt = $this->pdo->prepare(
+                    'UPDATE product_option
+                        SET nom = :nom, type = :type, obligatoire = :obligatoire, ordre = :ordre
+                      WHERE id = :id AND product_id = :product_id'
+                );
+                $stmtUpdateOpt->execute([
+                    'nom'         => $nomOpt,
+                    'type'        => $typeOpt,
+                    'obligatoire' => $obligatoire,
+                    'ordre'       => $ordreOpt,
+                    'id'          => $optId,
+                    'product_id'  => $productId,
+                ]);
+            } else {
+                $stmtInsertOpt = $this->pdo->prepare(
+                    'INSERT INTO product_option (product_id, nom, type, obligatoire, ordre)
+                     VALUES (:product_id, :nom, :type, :obligatoire, :ordre)'
+                );
+                $stmtInsertOpt->execute([
+                    'product_id'  => $productId,
+                    'nom'         => $nomOpt,
+                    'type'        => $typeOpt,
+                    'obligatoire' => $obligatoire,
+                    'ordre'       => $ordreOpt,
+                ]);
+                $optId = (int) $this->pdo->lastInsertId();
+            }
+
+            $idsConserves[] = $optId;
+
+            // Synchronisation des valeurs de cette option
+            $valeurs = isset($opt['valeurs']) && is_array($opt['valeurs']) ? $opt['valeurs'] : [];
+            $totalValeurs = count($valeurs);
+
+            $stmtValsExistantes = $this->pdo->prepare('SELECT id FROM product_option_value WHERE option_id = :option_id');
+            $stmtValsExistantes->execute(['option_id' => $optId]);
+            $idsValsExistants = $stmtValsExistantes->fetchAll(PDO::FETCH_COLUMN);
+
+            $idsValsConserves = [];
+
+            for ($j = 0; $j < $totalValeurs; $j++) {
+                $val = $valeurs[$j];
+                $nomVal = trim((string) ($val['nom'] ?? ''));
+                if ($nomVal === '') {
+                    continue;
+                }
+
+                $surcout = isset($val['surcout']) && is_numeric($val['surcout']) ? (float) $val['surcout'] : 0.0;
+                $ordreVal = isset($val['ordre']) ? (int) $val['ordre'] : $j;
+                $valId = isset($val['id']) && is_numeric($val['id']) ? (int) $val['id'] : 0;
+
+                if ($valId > 0 && in_array($valId, $idsValsExistants, true)) {
+                    $stmtUpdateVal = $this->pdo->prepare(
+                        'UPDATE product_option_value
+                            SET nom = :nom, surcout = :surcout, ordre = :ordre
+                          WHERE id = :id AND option_id = :option_id'
+                    );
+                    $stmtUpdateVal->execute([
+                        'nom'       => $nomVal,
+                        'surcout'   => $surcout,
+                        'ordre'     => $ordreVal,
+                        'id'        => $valId,
+                        'option_id' => $optId,
+                    ]);
+                } else {
+                    $stmtInsertVal = $this->pdo->prepare(
+                        'INSERT INTO product_option_value (option_id, nom, surcout, ordre)
+                         VALUES (:option_id, :nom, :surcout, :ordre)'
+                    );
+                    $stmtInsertVal->execute([
+                        'option_id' => $optId,
+                        'nom'       => $nomVal,
+                        'surcout'   => $surcout,
+                        'ordre'     => $ordreVal,
+                    ]);
+                    $valId = (int) $this->pdo->lastInsertId();
+                }
+
+                $idsValsConserves[] = $valId;
+            }
+
+            // Supprimer les valeurs d'option retirées
+            $totalValsExistantes = count($idsValsExistants);
+            for ($k = 0; $k < $totalValsExistantes; $k++) {
+                $exId = (int) $idsValsExistants[$k];
+                if (!in_array($exId, $idsValsConserves, true)) {
+                    $stmtSupprVal = $this->pdo->prepare('DELETE FROM product_option_value WHERE id = :id AND option_id = :option_id');
+                    $stmtSupprVal->execute(['id' => $exId, 'option_id' => $optId]);
+                }
+            }
+        }
+
+        // Supprimer les options retirées
+        $totalExistantes = count($idsExistants);
+        for ($m = 0; $m < $totalExistantes; $m++) {
+            $exOptId = (int) $idsExistants[$m];
+            if (!in_array($exOptId, $idsConserves, true)) {
+                $stmtSupprOpt = $this->pdo->prepare('DELETE FROM product_option WHERE id = :id AND product_id = :product_id');
+                $stmtSupprOpt->execute(['id' => $exOptId, 'product_id' => $productId]);
+            }
+        }
     }
 }

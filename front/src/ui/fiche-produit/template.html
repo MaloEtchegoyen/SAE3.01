@@ -24,10 +24,19 @@
     </p>
   </div>
 
-  <!-- Section Variantes / Options (injectée si existante) -->
+  <!-- Section Variantes (formats généraux si existants) -->
   <div data-ref="section-variantes" class="hidden flex-col gap-2.5 border-t border-border pt-4">
-    <label class="text-sm font-semibold ">Options / Formats</label>
+    <label class="text-sm font-semibold">Formats disponibles</label>
     <div data-ref="liste-variantes" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <!-- Section Options personnalisables (taille, parfum, lait, etc. - OPT-c) -->
+  <div data-ref="section-options" class="hidden flex-col gap-5 border-t border-border pt-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-default">Personnalisation</h2>
+      <span class="text-xs text-content-primary">Adaptez selon vos envies</span>
+    </div>
+    <div data-ref="liste-groupes-options" class="flex flex-col gap-4"></div>
   </div>
 
   <!-- Sélecteur de Quantité & Bouton Ajouter au panier -->
