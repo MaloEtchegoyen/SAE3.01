@@ -1,0 +1,28 @@
+<section class="mx-auto max-w-5xl px-6 pt-10 pb-16">
+  <!-- Messages système (erreur / succès) -->
+  <div class="mb-6">
+    <slot name="message"></slot>
+  </div>
+
+  <!-- Vue Liste : Toutes les commandes -->
+  <div data-vue-liste>
+    <h1 class="text-3xl font-bold tracking-tight text-sand-600 mb-6">
+      Toutes les commandes
+    </h1>
+
+    <slot name="table"></slot>
+
+    <!-- Pagination -->
+    <div class="mt-6">
+      <slot name="pagination"></slot>
+    </div>
+  </div>
+
+  <!-- Vue Détail d'une commande -->
+  <div data-vue-detail class="hidden">
+    <slot name="detail"></slot>
+  </div>
+
+  <!-- Modale de confirmation avant annulation -->
+  <slot name="confirmation"></slot>
+</section>

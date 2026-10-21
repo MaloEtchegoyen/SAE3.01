@@ -1,0 +1,146 @@
+<div class="flex flex-col gap-6">
+  <!-- Barre de filtres : Date, Statut, Montant, Validation -->
+  <form data-action="form-filtres" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Date</label>
+      <input
+        type="date"
+        data-action="filtre-date"
+        class="h-11 w-full rounded-xl bg-strong px-4 text-sm text-white shadow-xs transition-colors focus:ring-2 focus:ring-white/40 focus:outline-hidden [color-scheme:dark]"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Statut</label>
+      <div class="relative">
+        <select
+          data-action="filtre-statut"
+          class="h-11 w-full appearance-none rounded-xl bg-strong px-4 pr-10 text-sm text-white shadow-xs transition-colors cursor-pointer focus:ring-2 focus:ring-white/40 focus:outline-hidden"
+        >
+          <option value="" class="bg-strong text-white">Tous les statuts</option>
+          <option value="en cours" class="bg-strong text-white">En cours</option>
+          <option value="disponible" class="bg-strong text-white">Disponible</option>
+          <option value="retirée" class="bg-strong text-white">Retirée</option>
+          <option value="annulée" class="bg-strong text-white">Annulée</option>
+        </select>
+        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-white/70">
+          <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20">
+            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+          </svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Montant</label>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        data-action="filtre-montant"
+        placeholder="0.00"
+        class="h-11 w-full rounded-xl bg-strong px-4 text-sm text-white placeholder-white/60 shadow-xs transition-colors focus:ring-2 focus:ring-white/40 focus:outline-hidden"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <button
+        type="submit"
+        data-action="valider-filtres"
+        class="h-11 w-full inline-flex items-center justify-center rounded-xl bg-input px-4 text-sm font-medium text-white shadow-xs transition-opacity hover:opacity-90 cursor-pointer focus:ring-2 focus:ring-white/40 focus:outline-hidden"
+      >
+        Valider la recherche
+      </button>
+    </div>
+  </form>
+
+  <!-- Barre d'actions en lot (visible si au moins une commande sélectionnée) -->
+  <div data-zone-lot class="hidden items-center justify-between rounded-xl bg-brand p-4 text-white shadow-xs">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-strong text-xs font-bold" data-compteur-selection>0</span>
+      <span class="text-sm font-medium">commande(s) sélectionnée(s)</span>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs text-white/80 mr-1">Appliquer à la sélection :</span>
+      <button
+        type="button"
+        data-action-lot="disponible"
+        class="inline-flex items-center rounded-lg bg-strong px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:opacity-90 cursor-pointer"
+      >
+        commande(s) disponible
+      </button>
+      <button
+        type="button"
+        data-action-lot="retirée"
+        class="inline-flex items-center rounded-lg bg-strong px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:opacity-90 cursor-pointer"
+      >
+       retirer commande(s)
+      </button>
+      <button
+        type="button"
+        data-action-lot="annulée"
+        class="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-red-700 cursor-pointer"
+      >
+        Annuler commande(s)
+      </button>
+    </div>
+  </div>
+
+  <!-- Table des commandes -->
+  <div class="overflow-hidden rounded-2xl shadow-xs">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm text-white">
+        <thead class="bg-strong text-sm font-semibold text-white">
+          <tr>
+            <th scope="col" class="w-12 px-4 py-4 text-center">
+              <input
+                type="checkbox"
+                data-action="tout-selectionner"
+                title="Sélectionner toutes les commandes"
+                class="h-4 w-4 rounded-sm border-white/60 bg-transparent text-sand-600 cursor-pointer focus:ring-0"
+              />
+            </th>
+            <th scope="col" class="px-4 py-4">Commande</th>
+            <th scope="col" class="px-4 py-4">
+              <button
+                type="button"
+                data-action="trier-date"
+                class="inline-flex items-center gap-1 font-semibold text-white hover:opacity-80 cursor-pointer"
+              >
+                <span>Date</span>
+                <span data-icone-tri-date aria-hidden="true">&darr;</span>
+              </button>
+            </th>
+            <th scope="col" class="px-4 py-4">Client</th>
+            <th scope="col" class="px-4 py-4">
+              <button
+                type="button"
+                data-action="trier-statut"
+                class="inline-flex items-center gap-1 font-semibold text-white hover:opacity-80 cursor-pointer"
+              >
+                <span>Statut</span>
+                <span data-icone-tri-statut aria-hidden="true">&udarr;</span>
+              </button>
+            </th>
+            <th scope="col" class="px-4 py-4">
+              <button
+                type="button"
+                data-action="trier-montant"
+                class="inline-flex items-center gap-1 font-semibold text-white hover:opacity-80 cursor-pointer"
+              >
+                <span>Total</span>
+                <span data-icone-tri-montant aria-hidden="true">&udarr;</span>
+              </button>
+            </th>
+            <th scope="col" class="px-4 py-4">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/20 bg-brand text-white" data-corps-table>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Nombre de commandes affichées -->
+  <p class="text-sm text-neutral-500 dark:text-neutral-400" data-compteur-commandes></p>
+</div>

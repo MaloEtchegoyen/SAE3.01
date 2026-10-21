@@ -4,6 +4,7 @@ import { AdminLayout } from "./layouts/admin/layout.js";
 import { CataloguePage } from "./pages/catalogue/page.js";
 import { AdminPage } from "./pages/admin/page.js";
 import { AdminProduitsPage } from "./pages/admin-produits/page.js";
+import { AdminCommandesPage } from "./pages/admin-commandes/page.js";
 import { ConnexionAdminPage } from "./pages/connexion-admin/page.js";
 import { DetailProduitPage } from "./pages/detail-produit/page.js";
 import { PanierPage } from "./pages/panier/page.js";
@@ -33,6 +34,7 @@ router.addRoute("/connexion", ConnexionPage);
 router.addRoute("/connexion-admin", ConnexionAdminPage, { useLayout: false });
 router.addRoute("/admin", AdminPage);
 router.addRoute("/admin/produits", AdminProduitsPage);
+router.addRoute("/admin/commandes", AdminCommandesPage);
 
 // En dernier : toute adresse qui ne correspond à aucune route.
 router.addRoute("*", The404Page);
