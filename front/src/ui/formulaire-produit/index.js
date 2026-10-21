@@ -273,6 +273,189 @@ let FormulaireProduitView = {
       });
     }
 
+    // Gestion des options personnalisables du produit (GOF-a / OPT-c)
+    let conteneurOptions = form.querySelector('[data-ref="conteneur-options"]');
+    let btnAjouterOption = form.querySelector('[data-action="ajouter-option"]');
+    let messageOptionsVide = form.querySelector('[data-ref="message-options-vide"]');
+
+    let optionsListe = Array.isArray(data.produit?.options)
+      ? JSON.parse(JSON.stringify(data.produit.options))
+      : [];
+
+    let mettreAJourAffichageOptions = function () {
+      if (!conteneurOptions) return;
+      conteneurOptions.innerHTML = "";
+
+      if (optionsListe.length === 0) {
+        if (messageOptionsVide) messageOptionsVide.classList.remove("hidden");
+        return;
+      }
+
+      if (messageOptionsVide) messageOptionsVide.classList.add("hidden");
+
+      optionsListe.forEach((opt, optIndex) => {
+        let carteOpt = document.createElement("div");
+        carteOpt.className =
+          "rounded-lg border border-white/20 bg-black/20 p-4 space-y-3 shadow-xs";
+
+        // Ligne d'en-tête de l'option (Nom, Obligatoire, Supprimer)
+        let headerOpt = document.createElement("div");
+        headerOpt.className = "flex flex-wrap items-center justify-between gap-3";
+
+        let champNomOpt = document.createElement("div");
+        champNomOpt.className = "flex flex-1 min-w-[200px] flex-col gap-1";
+        let labelNom = document.createElement("label");
+        labelNom.className = "text-xs font-semibold text-white/90";
+        labelNom.textContent = `Option n°${optIndex + 1} *`;
+        let inputNom = document.createElement("input");
+        inputNom.type = "text";
+        inputNom.required = true;
+        inputNom.placeholder = "ex. Taille, Parfum, Type de lait...";
+        inputNom.value = opt.nom || "";
+        inputNom.className =
+          "h-9 rounded-lg border border-white/20 bg-white/10 px-3 text-xs text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+        inputNom.addEventListener("input", (e) => {
+          opt.nom = e.target.value;
+        });
+        champNomOpt.appendChild(labelNom);
+        champNomOpt.appendChild(inputNom);
+
+        // Case à cocher obligatoire
+        let champObligatoire = document.createElement("label");
+        champObligatoire.className =
+          "flex cursor-pointer items-center gap-2 text-xs font-medium text-white/90 select-none pt-4";
+        let checkboxObligatoire = document.createElement("input");
+        checkboxObligatoire.type = "checkbox";
+        checkboxObligatoire.checked = opt.obligatoire !== false && opt.obligatoire !== 0;
+        checkboxObligatoire.className = "h-4 w-4 rounded accent-brand";
+        checkboxObligatoire.addEventListener("change", (e) => {
+          opt.obligatoire = e.target.checked;
+        });
+        champObligatoire.appendChild(checkboxObligatoire);
+        champObligatoire.appendChild(document.createTextNode("Choix obligatoire"));
+
+        // Bouton supprimer option
+        let btnSupprOpt = document.createElement("button");
+        btnSupprOpt.type = "button";
+        btnSupprOpt.className =
+          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-colors mt-4";
+        btnSupprOpt.textContent = "Supprimer l'option";
+        btnSupprOpt.addEventListener("click", () => {
+          optionsListe.splice(optIndex, 1);
+          mettreAJourAffichageOptions();
+        });
+
+        headerOpt.appendChild(champNomOpt);
+        headerOpt.appendChild(champObligatoire);
+        headerOpt.appendChild(btnSupprOpt);
+        carteOpt.appendChild(headerOpt);
+
+        // Section valeurs possibles de l'option
+        let sectionValeurs = document.createElement("div");
+        sectionValeurs.className = "space-y-2 border-t border-white/10 pt-3";
+
+        let labelVals = document.createElement("span");
+        labelVals.className = "block text-xs font-medium text-white/80";
+        labelVals.textContent = "Valeurs de l'option (avec surcoût éventuel) :";
+        sectionValeurs.appendChild(labelVals);
+
+        let conteneurLignesVals = document.createElement("div");
+        conteneurLignesVals.className = "space-y-2";
+
+        if (!Array.isArray(opt.valeurs)) {
+          opt.valeurs = [];
+        }
+
+        opt.valeurs.forEach((val, valIndex) => {
+          let ligneVal = document.createElement("div");
+          ligneVal.className = "flex flex-wrap items-center gap-2";
+
+          let inputNomVal = document.createElement("input");
+          inputNomVal.type = "text";
+          inputNomVal.placeholder = "Libellé (ex. Simple, Double, Vanille...)";
+          inputNomVal.value = val.nom || "";
+          inputNomVal.className =
+            "h-8 flex-1 min-w-[150px] rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+          inputNomVal.addEventListener("input", (e) => {
+            val.nom = e.target.value;
+          });
+
+          let conteneurSurcout = document.createElement("div");
+          conteneurSurcout.className = "flex items-center gap-1";
+          let labelSurcout = document.createElement("span");
+          labelSurcout.className = "text-xs text-white/70";
+          labelSurcout.textContent = "+";
+          let inputSurcout = document.createElement("input");
+          inputSurcout.type = "number";
+          inputSurcout.step = "0.01";
+          inputSurcout.min = "0";
+          inputSurcout.placeholder = "0.00";
+          inputSurcout.value = val.surcout !== undefined ? val.surcout : 0;
+          inputSurcout.className =
+            "h-8 w-20 rounded-lg border border-white/20 bg-white/10 px-2 text-xs text-white text-right placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+          inputSurcout.addEventListener("input", (e) => {
+            val.surcout = parseFloat(e.target.value) || 0;
+          });
+          let spanEuro = document.createElement("span");
+          spanEuro.className = "text-xs text-white/70";
+          spanEuro.textContent = "€";
+
+          conteneurSurcout.appendChild(labelSurcout);
+          conteneurSurcout.appendChild(inputSurcout);
+          conteneurSurcout.appendChild(spanEuro);
+
+          let btnSupprVal = document.createElement("button");
+          btnSupprVal.type = "button";
+          btnSupprVal.className =
+            "flex h-7 w-7 items-center justify-center rounded-lg bg-red-600/60 text-xs font-bold text-white hover:bg-red-600 cursor-pointer transition-colors";
+          btnSupprVal.title = "Supprimer cette valeur";
+          btnSupprVal.innerHTML = "&times;";
+          btnSupprVal.addEventListener("click", () => {
+            opt.valeurs.splice(valIndex, 1);
+            mettreAJourAffichageOptions();
+          });
+
+          ligneVal.appendChild(inputNomVal);
+          ligneVal.appendChild(conteneurSurcout);
+          ligneVal.appendChild(btnSupprVal);
+          conteneurLignesVals.appendChild(ligneVal);
+        });
+
+        sectionValeurs.appendChild(conteneurLignesVals);
+
+        let btnAjouterVal = document.createElement("button");
+        btnAjouterVal.type = "button";
+        btnAjouterVal.className =
+          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1 text-xs font-medium text-white/90 hover:bg-white/10 transition-colors mt-1";
+        btnAjouterVal.textContent = "+ Ajouter une valeur";
+        btnAjouterVal.addEventListener("click", () => {
+          opt.valeurs.push({ nom: "", surcout: 0 });
+          mettreAJourAffichageOptions();
+        });
+        sectionValeurs.appendChild(btnAjouterVal);
+
+        carteOpt.appendChild(sectionValeurs);
+        conteneurOptions.appendChild(carteOpt);
+      });
+    };
+
+    if (btnAjouterOption) {
+      btnAjouterOption.addEventListener("click", () => {
+        optionsListe.push({
+          nom: "",
+          type: "radio",
+          obligatoire: true,
+          valeurs: [
+            { nom: "", surcout: 0 },
+            { nom: "", surcout: 0 },
+          ],
+        });
+        mettreAJourAffichageOptions();
+      });
+    }
+
+    mettreAJourAffichageOptions();
+
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
 
@@ -314,6 +497,29 @@ let FormulaireProduitView = {
         }
       }
 
+      // Nettoyage et formatage des options saisies
+      let optionsNettoyees = [];
+      optionsListe.forEach((opt) => {
+        let nomOpt = (opt.nom || "").trim();
+        if (nomOpt) {
+          let vals = (opt.valeurs || [])
+            .map((v) => ({
+              id: v.id,
+              nom: (v.nom || "").trim(),
+              surcout: typeof v.surcout === "number" ? v.surcout : (parseFloat(v.surcout) || 0),
+            }))
+            .filter((v) => v.nom !== "");
+
+          optionsNettoyees.push({
+            id: opt.id,
+            nom: nomOpt,
+            type: opt.type || "radio",
+            obligatoire: opt.obligatoire !== false && opt.obligatoire !== 0,
+            valeurs: vals,
+          });
+        }
+      });
+
       if (typeof actions.surSoumission === "function") {
         actions.surSoumission({
           id: data.produit?.id,
@@ -329,6 +535,7 @@ let FormulaireProduitView = {
           images_conservees_ids: imagesConserveesIds,
           image_principale_id: imagePrincipaleId,
           image_principale_index: imagePrincipaleIndex,
+          options: optionsNettoyees,
         });
       }
     });

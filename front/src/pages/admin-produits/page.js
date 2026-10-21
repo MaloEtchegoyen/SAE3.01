@@ -128,6 +128,7 @@ C.handler_ajouter_produit = async function (donnees) {
       description: donnees.description,
       fichiers: donnees.fichiers,
       image_principale_index: donnees.image_principale_index,
+      options: donnees.options,
     };
     let reponse = await ProductData.create(donneesProduit);
     M.message = {
@@ -222,6 +223,7 @@ C.handler_modifier_produit = async function (donnees) {
       images_conservees_ids: donnees.images_conservees_ids,
       image_principale_id: donnees.image_principale_id,
       image_principale_index: donnees.image_principale_index,
+      options: donnees.options,
     };
     let reponse = await ProductData.update(id, donneesProduit);
     M.message = {

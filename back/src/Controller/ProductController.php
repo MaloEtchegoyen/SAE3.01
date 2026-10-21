@@ -65,6 +65,7 @@ final class ProductController
 
         $produit['images']    = $this->produits->listerImages($id);
         $produit['variantes'] = $this->produits->listerVariantes($id);
+        $produit['options']   = $this->produits->listerOptions($id);
 
         Response::json($produit);
     }
@@ -158,6 +159,7 @@ final class ProductController
 
         $produit['images']    = $this->produits->listerImages($id);
         $produit['variantes'] = $this->produits->listerVariantes($id);
+        $produit['options']   = $this->produits->listerOptions($id);
 
         Response::json($produit);
     }
@@ -255,6 +257,14 @@ final class ProductController
                 }
             }
 
+            // Traitement éventuel des options personnalisables
+            if (isset($corps['options'])) {
+                $optionsData = is_string($corps['options']) ? json_decode($corps['options'], true) : $corps['options'];
+                if (is_array($optionsData)) {
+                    $this->produits->synchroniserOptions($id, $optionsData);
+                }
+            }
+
             Response::json(['succes' => true, 'id' => $id, 'message' => 'Produit créé avec succès.'], 201);
         } catch (Throwable $e) {
             Response::erreur('Erreur lors de la création du produit : ' . $e->getMessage(), 500);
@@ -328,6 +338,14 @@ final class ProductController
                 $this->produits->definirImagePrincipale($id, $idExistantePrinc);
             } else {
                 $this->produits->garantirImagePrincipale($id);
+            }
+
+            // 4. Traitement éventuel des options personnalisables
+            if (isset($corps['options'])) {
+                $optionsData = is_string($corps['options']) ? json_decode($corps['options'], true) : $corps['options'];
+                if (is_array($optionsData)) {
+                    $this->produits->synchroniserOptions($id, $optionsData);
+                }
             }
 
             Response::json(['succes' => true, 'message' => 'Produit mis à jour avec succès.']);
@@ -625,6 +643,44 @@ final class ProductController
 
         try {
             $this->produits->supprimerVariante($variantId, $productId, $definitif);
+            Response::json(['succes' => true, 'message' => 'Option supprimée avec succès.']);
+        } catch (Throwable $e) {
+            Response::erreur('Erreur lors de la suppression de l\'option : ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Administration : Lister les options personnalisables d'un produit.
+     */
+    public function listerOptions(Request $requete): void
+    {
+        $this->verifierAccesAdmin();
+
+        $productId = (int) ($requete->parametre('productId') ?? $requete->parametre('product_id') ?? 0);
+        if ($productId <= 0) {
+            Response::erreur('Identifiant de produit requis', 400);
+        }
+
+        Response::json($this->produits->listerOptions($productId));
+    }
+
+    /**
+     * Administration : Supprimer une option d'un produit.
+     */
+    public function supprimerOption(Request $requete): void
+    {
+        $this->verifierAccesAdmin();
+
+        $corps = $requete->corps();
+        $optionId = (int) ($corps['option_id'] ?? $corps['id'] ?? $requete->parametre('optionId') ?? $requete->parametre('id') ?? 0);
+        $productId = (int) ($corps['product_id'] ?? $requete->parametre('productId') ?? $requete->parametre('product_id') ?? 0);
+
+        if ($optionId <= 0 || $productId <= 0) {
+            Response::erreur('Identifiants d\'option et de produit requis', 400);
+        }
+
+        try {
+            $this->produits->supprimerOption($optionId, $productId);
             Response::json(['succes' => true, 'message' => 'Option supprimée avec succès.']);
         } catch (Throwable $e) {
             Response::erreur('Erreur lors de la suppression de l\'option : ' . $e->getMessage(), 500);

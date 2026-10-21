@@ -60,6 +60,8 @@ C.handler_confirmer_commande = async function () {
   let articlesPayload = M.articles.map((item) => ({
     produitId: item.produitId,
     varianteId: item.varianteId || null,
+    options: item.options || [],
+    nomVariante: item.nomVariante || null,
     quantite: item.quantite,
   }));
 

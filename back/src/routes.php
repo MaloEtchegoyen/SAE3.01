@@ -64,6 +64,8 @@ return [
     'DELETE /api/admin/products/images'            => [ProductController::class, 'supprimerImage'],
 
     // Administration - Options & Variantes
+    'GET    /api/admin/products/options'           => [ProductController::class, 'listerOptions'],
+    'DELETE /api/admin/products/options'           => [ProductController::class, 'supprimerOption'],
     'GET    /api/admin/products/variantes'         => [ProductController::class, 'listerVariantes'],
     'POST   /api/admin/products/variantes'         => [ProductController::class, 'ajouterVariante'],
     'PUT    /api/admin/products/variantes'         => [ProductController::class, 'modifierVariante'],

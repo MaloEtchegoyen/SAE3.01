@@ -157,6 +157,32 @@ final class OrderModel
                     $nomVariante = (string) $variante['nom'];
                     $prixUnitaire = (float) $variante['prix'];
                     $stockDisponible = (int) $variante['stock'];
+                } elseif (!empty($item['options']) && is_array($item['options'])) {
+                    // Si des options personnalisées sont sélectionnées (OPT-c)
+                    $surcoutTotal = 0.0;
+                    $nomsOptions = [];
+                    $totalOpts = count($item['options']);
+                    for ($j = 0; $j < $totalOpts; $j++) {
+                        $optItem = $item['options'][$j];
+                        $valId = (int) ($optItem['valeurId'] ?? 0);
+                        if ($valId > 0) {
+                            $stmtVal = $this->pdo->prepare('SELECT nom, surcout FROM product_option_value WHERE id = :id');
+                            $stmtVal->execute(['id' => $valId]);
+                            $valRow = $stmtVal->fetch();
+                            if ($valRow) {
+                                $surcoutTotal += (float) $valRow['surcout'];
+                                $nomsOptions[] = (string) $valRow['nom'];
+                            }
+                        }
+                    }
+                    $prixUnitaire += $surcoutTotal;
+                    if (!empty($nomsOptions)) {
+                        $nomVariante = mb_substr(implode(', ', $nomsOptions), 0, 150);
+                    } elseif (!empty($item['nomVariante'])) {
+                        $nomVariante = mb_substr((string) $item['nomVariante'], 0, 150);
+                    }
+                } elseif (!empty($item['nomVariante'])) {
+                    $nomVariante = mb_substr((string) $item['nomVariante'], 0, 150);
                 }
 
                 // Vérification du stock
