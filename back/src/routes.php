@@ -30,6 +30,12 @@ return [
     'POST /api/orders'         => [OrderController::class,     'creer'],
     'GET  /api/orders/detail'  => [OrderController::class,     'detail'],
 
+    // Administration - Commandes (PIL-b)
+    'GET  /api/admin/orders'        => [OrderController::class, 'listeAdmin'],
+    'GET  /api/admin/orders/detail' => [OrderController::class, 'detailAdmin'],
+    'PUT  /api/admin/orders/statut' => [OrderController::class, 'modifierStatut'],
+    'PUT  /api/admin/orders/lot'    => [OrderController::class, 'modifierStatutLot'],
+
     // Catalogue public (accessible à tous)
     'GET    /api/products'                         => [ProductController::class, 'catalogue'],
     'GET    /api/categories'                       => [ProductController::class, 'catalogueCategories'],

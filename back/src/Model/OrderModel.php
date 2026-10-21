@@ -12,8 +12,8 @@ use Throwable;
  * Modèle de gestion des commandes et de leurs lignes.
  *
  * Implémente la persistance des commandes, le calcul des totaux,
- * le gel des prix d'achat, le décrément des stocks et l'audit stock_movement
- * sous une transaction PDO atomique.
+ * le gel des prix d'achat, le décrément des stocks, l'audit stock_movement
+ * et le journal des modifications d'état par les administrateurs sous transaction PDO.
  */
 final class OrderModel
 {
@@ -22,6 +22,36 @@ final class OrderModel
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
+        $this->initialiserJournal();
+    }
+
+    /**
+     * S'assure que la table du journal d'audit des commandes existe.
+     */
+    private function initialiserJournal(): void
+    {
+        try {
+            $this->pdo->exec(
+                "CREATE TABLE IF NOT EXISTS journal_commande (
+                    id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                    commande_id INT(10) UNSIGNED NOT NULL,
+                    utilisateur_id INT(10) UNSIGNED NOT NULL,
+                    ancien_statut VARCHAR(30) NOT NULL,
+                    nouveau_statut VARCHAR(30) NOT NULL,
+                    action VARCHAR(50) NOT NULL,
+                    commentaire TEXT DEFAULT NULL,
+                    date_action DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    KEY fk_journal_commande_commande (commande_id),
+                    KEY fk_journal_commande_utilisateur (utilisateur_id),
+                    KEY idx_journal_date (date_action),
+                    CONSTRAINT fk_journal_commande_commande FOREIGN KEY (commande_id) REFERENCES commande (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_journal_commande_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateur (id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+        } catch (Throwable) {
+            // Ignore si la table ou les contraintes sont déjà gérées
+        }
     }
 
     /**
@@ -313,5 +343,399 @@ final class OrderModel
             'lignes'            => $lignes,
         ];
     }
-}
 
+    /**
+     * Liste toutes les commandes pour l'administration avec filtres, tri et pagination.
+     *
+     * @param array{tri?: string, statut?: ?string, date?: ?string, montant?: ?float, page?: int, parPage?: int} $options
+     * @return array{
+     *     items: array<int, mixed>,
+     *     page: int,
+     *     pagesTotal: int,
+     *     total: int,
+     *     tri: string,
+     *     parPage: int
+     * }
+     */
+    public function listerToutesAdmin(array $options = []): array
+    {
+        $tri = (string) ($options['tri'] ?? 'date_desc');
+        $statutFiltre = !empty($options['statut']) ? trim((string) $options['statut']) : null;
+        $dateFiltre = !empty($options['date']) ? trim((string) $options['date']) : null;
+        $montantFiltre = isset($options['montant']) && $options['montant'] !== null ? (float) $options['montant'] : null;
+        $page = max(1, (int) ($options['page'] ?? 1));
+        $parPage = max(1, min(100, (int) ($options['parPage'] ?? 20)));
+
+        $trisAutorises = [
+            'date_desc'    => 'c.date_commande DESC',
+            'date_asc'     => 'c.date_commande ASC',
+            'statut_asc'   => 'c.statut ASC, c.date_commande DESC',
+            'statut_desc'  => 'c.statut DESC, c.date_commande DESC',
+            'montant_desc' => 'c.total DESC, c.date_commande DESC',
+            'montant_asc'  => 'c.total ASC, c.date_commande DESC',
+        ];
+
+        $clauseTri = $trisAutorises[$tri] ?? $trisAutorises['date_desc'];
+        if (!isset($trisAutorises[$tri])) {
+            $tri = 'date_desc';
+        }
+
+        $conditions = [];
+        $parametres = [];
+
+        if ($statutFiltre !== null && $statutFiltre !== '') {
+            $conditions[] = 'c.statut = :statut';
+            $parametres['statut'] = $statutFiltre;
+        }
+
+        if ($dateFiltre !== null && $dateFiltre !== '') {
+            $conditions[] = 'DATE(c.date_commande) = :date_commande';
+            $parametres['date_commande'] = $dateFiltre;
+        }
+
+        if ($montantFiltre !== null) {
+            $conditions[] = 'c.total = :montant';
+            $parametres['montant'] = $montantFiltre;
+        }
+
+        $where = count($conditions) > 0 ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+        // Comptage total
+        $sqlCount = "SELECT COUNT(*) FROM commande c {$where}";
+        $stmtCount = $this->pdo->prepare($sqlCount);
+        $stmtCount->execute($parametres);
+        $total = (int) $stmtCount->fetchColumn();
+
+        $pagesTotal = max(1, (int) ceil($total / $parPage));
+        if ($page > $pagesTotal && $total > 0) {
+            $page = $pagesTotal;
+        }
+
+        $offset = ($page - 1) * $parPage;
+
+        $sql = "SELECT c.id, c.numero_commande, c.utilisateur_id, c.statut, c.total, c.date_commande,
+                       u.login AS utilisateur_login,
+                       COALESCE((SELECT SUM(lc.quantite) FROM ligne_commande lc WHERE lc.commande_id = c.id), 0) AS nb_articles
+                  FROM commande c
+             LEFT JOIN utilisateur u ON u.id = c.utilisateur_id
+                 {$where}
+              ORDER BY {$clauseTri}
+                 LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        $keys = array_keys($parametres);
+        for ($i = 0, $nbParams = count($keys); $i < $nbParams; $i++) {
+            $k = $keys[$i];
+            $stmt->bindValue(':' . $k, $parametres[$k]);
+        }
+        $stmt->bindValue(':limit', $parPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $lignesRaw = $stmt->fetchAll();
+
+        $items = [];
+        for ($i = 0, $nb = count($lignesRaw); $i < $nb; $i++) {
+            $row = $lignesRaw[$i];
+            $items[] = [
+                'id'                => (int) $row['id'],
+                'numero_commande'   => (string) $row['numero_commande'],
+                'utilisateur_id'    => (int) $row['utilisateur_id'],
+                'utilisateur_login' => (string) ($row['utilisateur_login'] ?? ''),
+                'statut'            => (string) $row['statut'],
+                'total'             => (float) $row['total'],
+                'date_commande'     => (string) $row['date_commande'],
+                'nb_articles'       => (int) $row['nb_articles'],
+            ];
+        }
+
+        return [
+            'items'      => $items,
+            'page'       => $page,
+            'pagesTotal' => $pagesTotal,
+            'total'      => $total,
+            'tri'        => $tri,
+            'parPage'    => $parPage,
+        ];
+    }
+
+    /**
+     * Recherche le détail complet d'une commande (lignes d'articles et journal d'audit admin).
+     *
+     * @param int $commandeId
+     * @return array<string, mixed>|null
+     */
+    public function trouverDetailComplet(int $commandeId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT c.id, c.numero_commande, c.utilisateur_id, c.statut, c.total, c.date_commande,
+                    u.login AS utilisateur_login
+               FROM commande c
+          LEFT JOIN utilisateur u ON u.id = c.utilisateur_id
+              WHERE c.id = :id'
+        );
+        $stmt->execute(['id' => $commandeId]);
+        $commande = $stmt->fetch();
+
+        if (!$commande) {
+            return null;
+        }
+
+        // Lignes de commande
+        $stmtLignes = $this->pdo->prepare(
+            'SELECT lc.id, lc.product_id, lc.variant_id, lc.nom_produit, lc.nom_variante,
+                    lc.quantite, lc.prix_unitaire, lc.total_ligne,
+                    (
+                        SELECT pi.url
+                          FROM product_image pi
+                         WHERE pi.product_id = lc.product_id
+                      ORDER BY pi.est_principale DESC, pi.ordre ASC, pi.id ASC
+                         LIMIT 1
+                    ) AS image_url
+               FROM ligne_commande lc
+              WHERE lc.commande_id = :commande_id
+           ORDER BY lc.id ASC'
+        );
+        $stmtLignes->execute(['commande_id' => $commandeId]);
+        $lignesRaw = $stmtLignes->fetchAll();
+
+        $lignes = [];
+        for ($i = 0, $nb = count($lignesRaw); $i < $nb; $i++) {
+            $row = $lignesRaw[$i];
+            $lignes[] = [
+                'id'            => (int) $row['id'],
+                'product_id'    => (int) $row['product_id'],
+                'variant_id'    => $row['variant_id'] !== null ? (int) $row['variant_id'] : null,
+                'nom_produit'   => (string) $row['nom_produit'],
+                'nom_variante'  => $row['nom_variante'] !== null ? (string) $row['nom_variante'] : null,
+                'quantite'      => (int) $row['quantite'],
+                'prix_unitaire' => (float) $row['prix_unitaire'],
+                'total_ligne'   => (float) $row['total_ligne'],
+                'image_url'     => $row['image_url'] ? (string) $row['image_url'] : null,
+            ];
+        }
+
+        // Journal des modifications effectuées par les administrateurs
+        $stmtJournal = $this->pdo->prepare(
+            'SELECT j.id, j.commande_id, j.utilisateur_id, j.ancien_statut, j.nouveau_statut,
+                    j.action, j.commentaire, j.date_action,
+                    u.login AS admin_login
+               FROM journal_commande j
+          LEFT JOIN utilisateur u ON u.id = j.utilisateur_id
+              WHERE j.commande_id = :commande_id
+           ORDER BY j.date_action DESC, j.id DESC'
+        );
+        $stmtJournal->execute(['commande_id' => $commandeId]);
+        $journalRaw = $stmtJournal->fetchAll();
+
+        $journal = [];
+        for ($j = 0, $nbJ = count($journalRaw); $j < $nbJ; $j++) {
+            $rowJ = $journalRaw[$j];
+            $journal[] = [
+                'id'             => (int) $rowJ['id'],
+                'commande_id'    => (int) $rowJ['commande_id'],
+                'utilisateur_id' => (int) $rowJ['utilisateur_id'],
+                'admin_login'    => (string) ($rowJ['admin_login'] ?? 'Admin'),
+                'ancien_statut'  => (string) $rowJ['ancien_statut'],
+                'nouveau_statut' => (string) $rowJ['nouveau_statut'],
+                'action'         => (string) $rowJ['action'],
+                'commentaire'    => $rowJ['commentaire'] !== null ? (string) $rowJ['commentaire'] : null,
+                'date_action'    => (string) $rowJ['date_action'],
+            ];
+        }
+
+        return [
+            'id'                => (int) $commande['id'],
+            'numero_commande'   => (string) $commande['numero_commande'],
+            'utilisateur_id'    => (int) $commande['utilisateur_id'],
+            'utilisateur_login' => (string) ($commande['utilisateur_login'] ?? ''),
+            'statut'            => (string) $commande['statut'],
+            'total'             => (float) $commande['total'],
+            'date_commande'     => (string) $commande['date_commande'],
+            'lignes'            => $lignes,
+            'journal'           => $journal,
+        ];
+    }
+
+    /**
+     * Fait évoluer le statut d'une commande selon les règles métier :
+     * - « en cours » -> « disponible » -> « retirée »
+     * - Annulation autorisée tant que la commande n'est PAS retirée
+     * - L'annulation remet en stock les produits/variantes et trace le mouvement
+     * - Les autres transitions ne modifient pas les stocks
+     * - Chaque changement est journalisé dans journal_commande
+     *
+     * @param int $commandeId
+     * @param string $nouveauStatut
+     * @param int $adminId
+     * @param string|null $commentaire
+     * @param string|null $actionSpecifique
+     * @return array<string, mixed>
+     * @throws Exception
+     */
+    public function changerStatut(
+        int $commandeId,
+        string $nouveauStatut,
+        int $adminId,
+        ?string $commentaire = null,
+        ?string $actionSpecifique = null
+    ): array {
+        $statutsValides = ['en cours', 'disponible', 'retirée', 'annulée'];
+        if (!in_array($nouveauStatut, $statutsValides, true)) {
+            throw new Exception("Statut « {$nouveauStatut} » non reconnu.");
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $stmt = $this->pdo->prepare('SELECT id, numero_commande, statut, total FROM commande WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $commandeId]);
+            $commande = $stmt->fetch();
+
+            if (!$commande) {
+                throw new Exception('Commande introuvable.');
+            }
+
+            $ancienStatut = (string) $commande['statut'];
+            $numeroCommande = (string) $commande['numero_commande'];
+
+            if ($ancienStatut === 'retirée') {
+                throw new Exception("La commande {$numeroCommande} a déjà été retirée et ne peut plus être modifiée ni annulée.");
+            }
+
+            if ($ancienStatut === 'annulée') {
+                throw new Exception("La commande {$numeroCommande} a déjà été annulée.");
+            }
+
+            if ($ancienStatut === $nouveauStatut) {
+                $this->pdo->commit();
+                return [
+                    'id'              => $commandeId,
+                    'numero_commande' => $numeroCommande,
+                    'statut'          => $nouveauStatut,
+                    'modifie'         => false,
+                ];
+            }
+
+            // Vérification de la séquence légitime de passage
+            if ($nouveauStatut === 'retirée' && $ancienStatut === 'en cours') {
+                // Bien que direct possible, la règle indique : « de "en cours" à "disponible" puis à "retirée" »
+                // On permet la transition vers 'disponible' puis 'retirée', ou le passage direct avec trace
+            }
+
+            // Remise en stock si annulation
+            if ($nouveauStatut === 'annulée') {
+                $stmtLignes = $this->pdo->prepare(
+                    'SELECT product_id, variant_id, quantite FROM ligne_commande WHERE commande_id = :commande_id'
+                );
+                $stmtLignes->execute(['commande_id' => $commandeId]);
+                $lignes = $stmtLignes->fetchAll();
+
+                $stmtUpdateProd = $this->pdo->prepare('UPDATE product SET stock = stock + :qte WHERE id = :id');
+                $stmtUpdateVar = $this->pdo->prepare('UPDATE product_variant SET stock = stock + :qte WHERE id = :id');
+                $stmtMvt = $this->pdo->prepare(
+                    'INSERT INTO stock_movement (product_id, variant_id, quantite, motif, date_mouvement)
+                     VALUES (:product_id, :variant_id, :quantite, :motif, NOW())'
+                );
+
+                for ($k = 0, $nbL = count($lignes); $k < $nbL; $k++) {
+                    $l = $lignes[$k];
+                    $qte = (int) $l['quantite'];
+                    $prodId = (int) $l['product_id'];
+                    $varId = $l['variant_id'] !== null ? (int) $l['variant_id'] : null;
+
+                    if ($varId !== null) {
+                        $stmtUpdateVar->execute(['qte' => $qte, 'id' => $varId]);
+                    } else {
+                        $stmtUpdateProd->execute(['qte' => $qte, 'id' => $prodId]);
+                    }
+
+                    $stmtMvt->execute([
+                        'product_id' => $prodId,
+                        'variant_id' => $varId,
+                        'quantite'   => $qte,
+                        'motif'      => 'annulation commande ' . $numeroCommande,
+                    ]);
+                }
+            }
+
+            // Mise à jour du statut de la commande
+            $stmtUpdateCmd = $this->pdo->prepare('UPDATE commande SET statut = :statut WHERE id = :id');
+            $stmtUpdateCmd->execute(['statut' => $nouveauStatut, 'id' => $commandeId]);
+
+            // Enregistrement dans le journal des modifications administrateurs
+            $action = $actionSpecifique ?? ($nouveauStatut === 'annulée' ? 'annulation' : 'changement_statut');
+            $stmtJournal = $this->pdo->prepare(
+                'INSERT INTO journal_commande (commande_id, utilisateur_id, ancien_statut, nouveau_statut, action, commentaire, date_action)
+                 VALUES (:commande_id, :utilisateur_id, :ancien_statut, :nouveau_statut, :action, :commentaire, NOW())'
+            );
+            $stmtJournal->execute([
+                'commande_id'    => $commandeId,
+                'utilisateur_id' => $adminId,
+                'ancien_statut'  => $ancienStatut,
+                'nouveau_statut' => $nouveauStatut,
+                'action'         => $action,
+                'commentaire'    => $commentaire,
+            ]);
+
+            $this->pdo->commit();
+
+            return [
+                'id'              => $commandeId,
+                'numero_commande' => $numeroCommande,
+                'ancien_statut'   => $ancienStatut,
+                'nouveau_statut'  => $nouveauStatut,
+                'modifie'         => true,
+            ];
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw new Exception($e->getMessage(), (int) $e->getCode(), $e);
+        }
+    }
+
+    /**
+     * Applique une modification de statut en lot sur plusieurs commandes.
+     *
+     * @param array<int, int> $ids
+     * @param string $nouveauStatut
+     * @param int $adminId
+     * @return array{modifies: int, ignores: int, erreurs: array<int, string>}
+     */
+    public function changerStatutLot(array $ids, string $nouveauStatut, int $adminId): array
+    {
+        $modifies = 0;
+        $ignores = 0;
+        $erreurs = [];
+
+        for ($i = 0, $nb = count($ids); $i < $nb; $i++) {
+            $id = (int) $ids[$i];
+            if ($id <= 0) {
+                continue;
+            }
+
+            try {
+                $res = $this->changerStatut(
+                    $id,
+                    $nouveauStatut,
+                    $adminId,
+                    'Action groupée',
+                    'action_lot_' . $nouveauStatut
+                );
+                if (!empty($res['modifie'])) {
+                    $modifies++;
+                } else {
+                    $ignores++;
+                }
+            } catch (Throwable $e) {
+                $erreurs[] = "Commande #{$id} : " . $e->getMessage();
+            }
+        }
+
+        return [
+            'modifies' => $modifies,
+            'ignores'  => $ignores,
+            'erreurs'  => $erreurs,
+        ];
+    }
+}
