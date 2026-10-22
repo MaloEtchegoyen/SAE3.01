@@ -1,11 +1,104 @@
-﻿import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
+import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
 import { formaterPrix } from "../../lib/format.js";
 import template from "./template.html?raw";
 
 /**
+ * Évalue la disponibilité d'une valeur d'option en fonction des autres options déjà sélectionnées (OPT-b).
+ *
+ * @param {number|string} optId
+ * @param {number|string} valId
+ * @param {Record<string|number, number>} optionsChoisies
+ * @param {Array<object>} variantes
+ * @returns {{
+ *   existe: boolean,
+ *   stock: number,
+ *   epuise: boolean,
+ *   variante?: object,
+ *   code: "disponible" | "epuise" | "inexistant"
+ * }}
+ */
+function evaluerDisponibiliteValeur(optId, valId, optionsChoisies, variantes) {
+  if (!Array.isArray(variantes) || variantes.length === 0) {
+    return { existe: true, stock: 99, epuise: false, code: "disponible" };
+  }
+
+  let variantesAvecValeurs = variantes.filter(
+    (v) => Array.isArray(v.valeur_ids) && v.valeur_ids.length > 0
+  );
+
+  if (variantesAvecValeurs.length === 0) {
+    return { existe: true, stock: 99, epuise: false, code: "disponible" };
+  }
+
+  let numValId = Number(valId);
+  let numOptId = Number(optId);
+
+  // 1. Vérifier si cette valeur d'option existe dans au moins une variante
+  let variantesAvecCetteValeur = variantesAvecValeurs.filter((v) =>
+    (v.valeur_ids || []).map(Number).includes(numValId)
+  );
+
+  if (variantesAvecCetteValeur.length === 0) {
+    return { existe: false, stock: 0, epuise: true, code: "inexistant" };
+  }
+
+  // 2. Vérifier si cette valeur existe dans au moins une variante avec stock > 0
+  let variantesEnStock = variantesAvecCetteValeur.filter(
+    (v) => Number(v.stock ?? 0) > 0
+  );
+
+  if (variantesEnStock.length === 0) {
+    return { existe: true, stock: 0, epuise: true, code: "epuise" };
+  }
+
+  // 3. Combinaison avec les options actuellement choisies
+  let hypo = { ...optionsChoisies, [numOptId]: numValId };
+  let idsHypo = Object.values(hypo).map(Number).sort((a, b) => a - b);
+
+  // Recherche d'une variante exacte
+  let varianteTrouvee = variantesAvecValeurs.find((v) => {
+    let vIds = (v.valeur_ids || []).map(Number).sort((a, b) => a - b);
+    if (vIds.length !== idsHypo.length) return false;
+    for (let i = 0; i < vIds.length; i++) {
+      if (vIds[i] !== idsHypo[i]) return false;
+    }
+    return true;
+  });
+
+  if (varianteTrouvee) {
+    let stock = Number(varianteTrouvee.stock ?? 0);
+    return {
+      existe: true,
+      stock,
+      epuise: stock <= 0,
+      variante: varianteTrouvee,
+      code: stock <= 0 ? "epuise" : "disponible",
+    };
+  }
+
+  // 4. Recherche si au moins une variante contient ce sous-ensemble
+  let variantesPossibles = variantesAvecValeurs.filter((v) => {
+    let vIds = (v.valeur_ids || []).map(Number);
+    return idsHypo.every((id) => vIds.includes(id));
+  });
+
+  if (variantesPossibles.length === 0) {
+    return { existe: false, stock: 0, epuise: true, code: "inexistant" };
+  }
+
+  let maxStock = Math.max(...variantesPossibles.map((v) => Number(v.stock ?? 0)));
+  return {
+    existe: true,
+    stock: maxStock,
+    epuise: maxStock <= 0,
+    code: maxStock <= 0 ? "epuise" : "disponible",
+  };
+}
+
+/**
  * Vue FicheProduitView.
  * Composant de présentation affichant les détails du produit, son prix dynamique,
- * ses options personnalisables (OPT-c), ses variantes éventuelles,
+ * ses combinaisons d'options avec contrôle du stock par variante (OPT-b),
  * le sélecteur de quantité et le bouton d'ajout au panier.
  */
 let FicheProduitView = {
@@ -21,7 +114,6 @@ let FicheProduitView = {
    * @param {{
    *   onAjouterPanier?: (produit: object, quantite: number, optionsChoisies: object, variante: object|null) => void,
    *   onChangerQuantite?: (nouvelleQuantite: number) => void,
-   *   onChoisirVariante?: (variante: object|null) => void,
    *   onChoisirOption?: (optionId: number, valeurId: number) => void
    * }} actions
    * @returns {DocumentFragment}
@@ -32,39 +124,60 @@ let FicheProduitView = {
     let optionsChoisies = donnees.optionsChoisies || {};
     let quantite = Math.max(0, Number(donnees.quantite ?? 0));
 
-    // Détermination du prix de base selon variante ou produit de base
-    let prixBase = Number(varianteActive?.prix !== undefined ? varianteActive.prix : (produit.prix ?? 0));
-    let stockDisponible = Number(
-      varianteActive?.stock !== undefined ? varianteActive.stock : (produit.stock ?? 0)
+    let options = Array.isArray(produit.options) ? produit.options : [];
+    let variantes = Array.isArray(produit.variantes) ? produit.variantes : [];
+    let variantesAvecValeurs = variantes.filter(
+      (v) => Array.isArray(v.valeur_ids) && v.valeur_ids.length > 0
     );
+
+    // Détermination du statut de disponibilité de la combinaison active
+    let combinaisonInexistante = false;
+    let stockDisponible = 0;
+    let seuilAlerte = Number(varianteActive?.seuil_alerte ?? produit.seuil_alerte ?? 5);
+
+    if (variantesAvecValeurs.length > 0) {
+      if (varianteActive) {
+        stockDisponible = Number(varianteActive.stock ?? 0);
+      } else {
+        combinaisonInexistante = true;
+        stockDisponible = 0;
+      }
+    } else if (varianteActive) {
+      stockDisponible = Number(varianteActive.stock ?? 0);
+    } else {
+      stockDisponible = Number(produit.stock ?? 0);
+    }
+
     let estEpuise = stockDisponible <= 0;
 
-    // Calcul dynamique du surcoût des options personnalisées (OPT-c)
-    let options = Array.isArray(produit.options) ? produit.options : [];
-    let surcoutOptions = 0;
-
-    let nbOpts = options.length;
-    for (let i = 0; i < nbOpts; i++) {
-      let opt = options[i];
-      let valIdChoisi = optionsChoisies[opt.id];
-      if (valIdChoisi && Array.isArray(opt.valeurs)) {
-        let nbVals = opt.valeurs.length;
-        for (let j = 0; j < nbVals; j++) {
-          let v = opt.valeurs[j];
-          if (Number(v.id) === Number(valIdChoisi)) {
-            surcoutOptions += Number(v.surcout || 0);
-            break;
+    // Détermination du prix affiché
+    let prixAffiche = 0;
+    if (varianteActive?.prix !== undefined) {
+      prixAffiche = Number(varianteActive.prix);
+    } else {
+      let surcoutOptions = 0;
+      let nbOpts = options.length;
+      for (let i = 0; i < nbOpts; i++) {
+        let opt = options[i];
+        let valIdChoisi = optionsChoisies[opt.id];
+        if (valIdChoisi && Array.isArray(opt.valeurs)) {
+          let nbVals = opt.valeurs.length;
+          for (let j = 0; j < nbVals; j++) {
+            let v = opt.valeurs[j];
+            if (Number(v.id) === Number(valIdChoisi)) {
+              surcoutOptions += Number(v.surcout || 0);
+              break;
+            }
           }
         }
       }
+      prixAffiche = Math.round((Number(produit.prix ?? 0) + surcoutOptions) * 100) / 100;
     }
-
-    let prixDynamique = Math.round((prixBase + surcoutOptions) * 100) / 100;
 
     let htmlString = genericRenderer(template, {
       nom: produit.nom || "Produit sans nom",
       categorie: produit.categorie || "Café Feuillette",
-      prix: formaterPrix(prixDynamique),
+      prix: formaterPrix(prixAffiche),
       description:
         produit.description ||
         "Ce produit ne possède pas encore de description.",
@@ -72,7 +185,7 @@ let FicheProduitView = {
 
     let fragment = htmlToFragment(htmlString);
 
-    // Sélecteur de quantité
+    // Sélecteur de quantité & Stock
     let valQuantite = fragment.querySelector('[data-ref="valeur-quantite"]');
     let btnDiminuer = fragment.querySelector('[data-action="diminuer-quantite"]');
     let btnAugmenter = fragment.querySelector('[data-action="augmenter-quantite"]');
@@ -84,20 +197,26 @@ let FicheProduitView = {
       valQuantite.textContent = String(quantite);
     }
 
+    // Affichage des stocks par variante (STK-b / OPT-b)
     if (spanStock) {
-      if (estEpuise) {
+      if (combinaisonInexistante) {
+        spanStock.textContent = "Combinaison indisponible";
+        spanStock.className = "text-caption font-semibold text-red-500";
+      } else if (estEpuise) {
         spanStock.textContent = "Victime de son succès";
-        spanStock.classList.add("text-red-600");
-      } else if (stockDisponible <= 5) {
+        spanStock.className = "text-caption font-semibold text-red-500";
+      } else if (stockDisponible <= seuilAlerte) {
         spanStock.textContent = `Plus que ${stockDisponible} en stock`;
-        spanStock.classList.add("text-amber-600");
+        spanStock.className = "text-caption font-semibold text-amber-500";
       } else {
         spanStock.textContent = `${stockDisponible} disponibles`;
+        spanStock.className = "text-caption font-semibold text-emerald-500";
       }
     }
 
+    // Contraintes de quantité (STK-c / OPT-b)
     if (btnDiminuer) {
-      btnDiminuer.disabled = quantite <= 1 || estEpuise;
+      btnDiminuer.disabled = quantite <= 1 || estEpuise || combinaisonInexistante;
       btnDiminuer.addEventListener("click", () => {
         if (quantite > 1) {
           actions?.onChangerQuantite?.(quantite - 1);
@@ -106,7 +225,7 @@ let FicheProduitView = {
     }
 
     if (btnAugmenter) {
-      btnAugmenter.disabled = quantite >= stockDisponible || estEpuise;
+      btnAugmenter.disabled = quantite >= stockDisponible || estEpuise || combinaisonInexistante;
       btnAugmenter.addEventListener("click", () => {
         if (quantite < stockDisponible) {
           actions?.onChangerQuantite?.(quantite + 1);
@@ -114,50 +233,25 @@ let FicheProduitView = {
       });
     }
 
-    // Gestion du bouton d'ajout au panier avec transmission des options
+    // Bouton d'ajout au panier
     if (btnAjouter) {
-      if (estEpuise) {
+      if (combinaisonInexistante) {
         btnAjouter.disabled = true;
-        if (txtBouton) txtBouton.textContent = "Produit épuisé";
+        if (txtBouton) txtBouton.textContent = "Combinaison indisponible";
+      } else if (estEpuise) {
+        btnAjouter.disabled = true;
+        if (txtBouton) txtBouton.textContent = "Variante épuisée";
       } else {
         btnAjouter.disabled = false;
+        if (txtBouton) txtBouton.textContent = "Ajouter au panier";
         btnAjouter.addEventListener("click", () => {
           actions?.onAjouterPanier?.(produit, quantite, optionsChoisies, varianteActive);
         });
       }
     }
 
-    // Variantes / formats si le produit en comporte
-    let sectionVariantes = fragment.querySelector('[data-ref="section-variantes"]');
-    let listeVariantes = fragment.querySelector('[data-ref="liste-variantes"]');
-    let variantes = Array.isArray(produit.variantes) ? produit.variantes : [];
 
-    if (variantes.length > 0 && sectionVariantes && listeVariantes) {
-      sectionVariantes.classList.remove("hidden");
-      sectionVariantes.classList.add("flex");
-
-      variantes.forEach((variante) => {
-        let estChoisie =
-          varianteActive?.id !== undefined
-            ? Number(varianteActive.id) === Number(variante.id)
-            : false;
-
-        let btnVar = document.createElement("button");
-        btnVar.type = "button";
-        btnVar.className = `px-3.5 py-1.5 rounded-xl border text-body-sm font-medium transition cursor-pointer ${
-          estChoisie
-            ? "border-brand bg-brand/10 text-brand font-semibold shadow-2xs"
-            : "border-border text-content-secondary hover:border-brand/40"
-        }`;
-        btnVar.textContent = `${variante.nom} (${formaterPrix(variante.prix)})`;
-        btnVar.addEventListener("click", () => {
-          actions?.onChoisirVariante?.(estChoisie ? null : variante);
-        });
-        listeVariantes.appendChild(btnVar);
-      });
-    }
-
-    // Options personnalisables (OPT-c : taille, parfum, lait, etc.)
+    // Options personnalisables (OPT-c & OPT-b : taille, format, lait, parfum avec stock par combinaison)
     let sectionOptions = fragment.querySelector('[data-ref="section-options"]');
     let listeGroupes = fragment.querySelector('[data-ref="liste-groupes-options"]');
 
@@ -184,33 +278,119 @@ let FicheProduitView = {
         labelEl.appendChild(spanBadge);
         groupeEl.appendChild(labelEl);
 
-        let conteneurValeurs = document.createElement("div");
-        conteneurValeurs.className = "flex flex-wrap gap-2";
-
         let valeurs = Array.isArray(opt.valeurs) ? opt.valeurs : [];
-        valeurs.forEach((valeur) => {
-          let estChoisie = Number(optionsChoisies[opt.id]) === Number(valeur.id);
+        let estOptionFormat =
+          (opt.nom && opt.nom.toLowerCase().includes("format")) || opt.type === "select";
 
-          let btnVal = document.createElement("button");
-          btnVal.type = "button";
-          btnVal.className = `flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-body-sm font-medium transition cursor-pointer ${
-            estChoisie
-              ? "bg-brand text-default border-border font-semibold shadow-2xs"
-              : "border-border bg-input hover:bg-input-hover text-white"
-          }`;
+        if (estOptionFormat) {
+          // Affichage sous forme de select pour les options de format
+          let conteneurSelect = document.createElement("div");
+          conteneurSelect.className = "relative";
 
-          let surcout = Number(valeur.surcout || 0);
-          let labelSurcout = surcout > 0 ? ` (+${formaterPrix(surcout)})` : "";
-          btnVal.textContent = `${valeur.nom}${labelSurcout}`;
+          let selectEl = document.createElement("select");
+          selectEl.className =
+            "w-full appearance-none rounded-xl border border-border bg-input px-3.5 py-2.5 pr-10 text-body-sm font-medium text-white transition focus:border-brand focus:outline-hidden disabled:opacity-50 cursor-pointer";
 
-          btnVal.addEventListener("click", () => {
-            actions?.onChoisirOption?.(opt.id, valeur.id);
+          if (!opt.obligatoire) {
+            let optionVide = document.createElement("option");
+            optionVide.value = "";
+            optionVide.textContent = "Aucun (optionnel)";
+            if (!optionsChoisies[opt.id]) {
+              optionVide.selected = true;
+            }
+            selectEl.appendChild(optionVide);
+          }
+
+          valeurs.forEach((valeur) => {
+            let estChoisie = Number(optionsChoisies[opt.id]) === Number(valeur.id);
+            let dispo = evaluerDisponibiliteValeur(opt.id, valeur.id, optionsChoisies, variantes);
+
+            let surcout = Number(valeur.surcout || 0);
+            let labelSurcout = surcout > 0 ? ` (+${formaterPrix(surcout)})` : "";
+
+            let optionEl = document.createElement("option");
+            optionEl.value = String(valeur.id);
+
+            let indisponible = !dispo.existe || dispo.epuise;
+            let suffixe = "";
+            if (!dispo.existe) {
+              suffixe = " - Indisponible";
+            } else if (dispo.epuise) {
+              suffixe = " - Épuisé";
+            }
+
+            optionEl.textContent = `${valeur.nom}${labelSurcout}${suffixe}`;
+
+            if (indisponible) {
+              optionEl.disabled = true;
+            }
+
+            if (estChoisie) {
+              optionEl.selected = true;
+            }
+
+            selectEl.appendChild(optionEl);
           });
 
-          conteneurValeurs.appendChild(btnVal);
-        });
+          selectEl.addEventListener("change", (e) => {
+            let val = e.target.value;
+            actions?.onChoisirOption?.(opt.id, val ? Number(val) : null);
+          });
 
-        groupeEl.appendChild(conteneurValeurs);
+          let chevronWrapper = document.createElement("div");
+          chevronWrapper.className =
+            "pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-content-secondary";
+          chevronWrapper.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+            </svg>
+          `;
+
+          conteneurSelect.appendChild(selectEl);
+          conteneurSelect.appendChild(chevronWrapper);
+          groupeEl.appendChild(conteneurSelect);
+        } else {
+          // Affichage par boutons / pastilles
+          let conteneurValeurs = document.createElement("div");
+          conteneurValeurs.className = "flex flex-wrap gap-2";
+
+          valeurs.forEach((valeur) => {
+            let estChoisie = Number(optionsChoisies[opt.id]) === Number(valeur.id);
+            let dispo = evaluerDisponibiliteValeur(opt.id, valeur.id, optionsChoisies, variantes);
+
+            let btnVal = document.createElement("button");
+            btnVal.type = "button";
+
+            let surcout = Number(valeur.surcout || 0);
+            let labelSurcout = surcout > 0 ? ` (+${formaterPrix(surcout)})` : "";
+
+            let indisponible = !dispo.existe || dispo.epuise;
+            let etiquetteStatut = !dispo.existe ? "Indisponible" : "Épuisé";
+
+            if (indisponible) {
+              btnVal.disabled = true;
+              btnVal.className = estChoisie
+                ? "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-500/50 bg-red-500/20 text-red-300 text-body-sm font-semibold opacity-60 cursor-not-allowed"
+                : "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-dashed border-zinc-600 bg-black/20 text-content-muted text-body-sm font-medium opacity-50 cursor-not-allowed";
+              btnVal.textContent = `${valeur.nom}${labelSurcout} (${etiquetteStatut})`;
+            } else {
+              btnVal.className = `flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-body-sm font-medium transition cursor-pointer ${
+                estChoisie
+                  ? "bg-brand text-default border-border font-semibold shadow-2xs"
+                  : "border-border bg-input hover:bg-input-hover text-white"
+              }`;
+              btnVal.textContent = `${valeur.nom}${labelSurcout}`;
+              btnVal.addEventListener("click", () => {
+                actions?.onChoisirOption?.(opt.id, valeur.id);
+              });
+            }
+
+            conteneurValeurs.appendChild(btnVal);
+          });
+
+          groupeEl.appendChild(conteneurValeurs);
+        }
+
         listeGroupes.appendChild(groupeEl);
       });
     }
@@ -220,4 +400,3 @@ let FicheProduitView = {
 };
 
 export { FicheProduitView };
-

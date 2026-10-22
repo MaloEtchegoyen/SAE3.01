@@ -139,7 +139,41 @@ final class OrderModel
                 $prixUnitaire = (float) $produit['prix'];
                 $stockDisponible = (int) $produit['stock'];
 
-                // Si une variante est demandée
+                // Si aucune variante explicite mais des options choisies, résolution de la variante correspondante (OPT-b)
+                if ($varianteId === null && !empty($item['options']) && is_array($item['options'])) {
+                    $optValIds = [];
+                    $nbOpts = count($item['options']);
+                    for ($o = 0; $o < $nbOpts; $o++) {
+                        $vId = (int) ($item['options'][$o]['valeurId'] ?? 0);
+                        if ($vId > 0) {
+                            $optValIds[] = $vId;
+                        }
+                    }
+                    if (!empty($optValIds)) {
+                        sort($optValIds);
+                        $stmtTrouveVar = $this->pdo->prepare(
+                            'SELECT pv.id FROM product_variant pv WHERE pv.product_id = :product_id AND pv.actif = 1'
+                        );
+                        $stmtTrouveVar->execute(['product_id' => $produitId]);
+                        $toutesVars = $stmtTrouveVar->fetchAll();
+                        $nbTV = count($toutesVars);
+                        for ($tv = 0; $tv < $nbTV; $tv++) {
+                            $candidatId = (int) $toutesVars[$tv]['id'];
+                            $stmtV = $this->pdo->prepare(
+                                'SELECT option_value_id FROM product_variant_value WHERE variant_id = :vid ORDER BY option_value_id ASC'
+                            );
+                            $stmtV->execute(['vid' => $candidatId]);
+                            $candidatVals = array_map('intval', $stmtV->fetchAll(PDO::FETCH_COLUMN));
+                            sort($candidatVals);
+                            if ($candidatVals === $optValIds) {
+                                $varianteId = $candidatId;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Si une variante est demandée ou résolue
                 if ($varianteId !== null) {
                     $stmtVar = $this->pdo->prepare(
                         'SELECT id, nom, prix, stock, actif FROM product_variant WHERE id = :id AND product_id = :produit_id FOR UPDATE'
@@ -258,6 +292,10 @@ final class OrderModel
                     $stmtUpdateStockVar->execute([
                         'quantite' => $ligne['quantite'],
                         'id'       => $ligne['variant_id'],
+                    ]);
+                    $stmtUpdateStockProd->execute([
+                        'quantite' => $ligne['quantite'],
+                        'id'       => $ligne['product_id'],
                     ]);
                 } else {
                     $stmtUpdateStockProd->execute([
@@ -671,6 +709,7 @@ final class OrderModel
 
                     if ($varId !== null) {
                         $stmtUpdateVar->execute(['qte' => $qte, 'id' => $varId]);
+                        $stmtUpdateProd->execute(['qte' => $qte, 'id' => $prodId]);
                     } else {
                         $stmtUpdateProd->execute(['qte' => $qte, 'id' => $prodId]);
                     }
