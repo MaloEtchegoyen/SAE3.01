@@ -27,6 +27,7 @@ return [
 
     // Commandes (Clients connectés)
     'POST /api/orders'         => [OrderController::class,     'creer'],
+    'GET  /api/orders'         => [OrderController::class,     'listerMesCommandes'],
     'GET  /api/orders/detail'  => [OrderController::class,     'detail'],
 
     // Administration - Commandes (PIL-b)

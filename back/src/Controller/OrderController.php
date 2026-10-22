@@ -70,11 +70,21 @@ final class OrderController
         }
 
         $utilisateurId = (int) $_SESSION['id'];
-        $limite = max(1, min(50, (int) ($requete->parametre('limite') ?? 5)));
+        $tri = (string) ($requete->parametre('tri') ?? 'date_desc');
+        $statut = $requete->parametre('statut');
+        $periode = $requete->parametre('periode');
+        $page = max(1, (int) ($requete->parametre('page') ?? 1));
+        $parPage = max(1, min(50, (int) ($requete->parametre('parPage') ?? $requete->parametre('limite') ?? 10)));
 
-        $commandes = $this->orders->listerParUtilisateur($utilisateurId, $limite);
+        $resultat = $this->orders->listerPourClient($utilisateurId, [
+            'tri'     => $tri,
+            'statut'  => $statut,
+            'periode' => $periode,
+            'page'    => $page,
+            'parPage' => $parPage,
+        ]);
 
-        Response::json($commandes);
+        Response::json($resultat);
     }
     public function detail(Request $requete): void
     {

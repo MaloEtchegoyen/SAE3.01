@@ -437,6 +437,167 @@ final class OrderModel
      *     articles_apercu: string
      * }>
      */
+    /**
+     * Liste les commandes d'un client avec filtres, tri, pagination et détails des articles/options.
+     * Conforme aux critères SUI-c.
+     *
+     * @param int $utilisateurId
+     * @param array{tri?: string, statut?: ?string, periode?: ?string, page?: int, parPage?: int} $options
+     * @return array{
+     *     items: array<int, mixed>,
+     *     page: int,
+     *     pagesTotal: int,
+     *     total: int,
+     *     tri: string,
+     *     parPage: int,
+     *     statut: ?string,
+     *     periode: ?string
+     * }
+     */
+    public function listerPourClient(int $utilisateurId, array $options = []): array
+    {
+        $tri = (string) ($options['tri'] ?? 'date_desc');
+        $statutFiltre = !empty($options['statut']) ? trim((string) $options['statut']) : null;
+        $periodeFiltre = !empty($options['periode']) ? trim((string) $options['periode']) : null;
+        $page = max(1, (int) ($options['page'] ?? 1));
+        $parPage = max(1, min(50, (int) ($options['parPage'] ?? 10)));
+
+        $trisAutorises = [
+            'date_desc'    => 'c.date_commande DESC',
+            'date_asc'     => 'c.date_commande ASC',
+            'montant_desc' => 'c.total DESC, c.date_commande DESC',
+            'montant_asc'  => 'c.total ASC, c.date_commande DESC',
+        ];
+
+        $clauseTri = $trisAutorises[$tri] ?? $trisAutorises['date_desc'];
+        if (!isset($trisAutorises[$tri])) {
+            $tri = 'date_desc';
+        }
+
+        $conditions = ['c.utilisateur_id = :utilisateur_id'];
+        $parametres = ['utilisateur_id' => $utilisateurId];
+
+        if ($statutFiltre !== null && $statutFiltre !== '' && $statutFiltre !== 'tous') {
+            $conditions[] = 'c.statut = :statut';
+            $parametres['statut'] = $statutFiltre;
+        }
+
+        if ($periodeFiltre !== null && $periodeFiltre !== '' && $periodeFiltre !== 'tous') {
+            if ($periodeFiltre === '30j') {
+                $conditions[] = 'c.date_commande >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+            } elseif ($periodeFiltre === '3m') {
+                $conditions[] = 'c.date_commande >= DATE_SUB(NOW(), INTERVAL 3 MONTH)';
+            } elseif ($periodeFiltre === '6m') {
+                $conditions[] = 'c.date_commande >= DATE_SUB(NOW(), INTERVAL 6 MONTH)';
+            } elseif ($periodeFiltre === 'annee') {
+                $conditions[] = 'YEAR(c.date_commande) = YEAR(NOW())';
+            }
+        }
+
+        $where = 'WHERE ' . implode(' AND ', $conditions);
+
+        // Comptage total des commandes pour la pagination
+        $sqlCount = "SELECT COUNT(*) FROM commande c {$where}";
+        $stmtCount = $this->pdo->prepare($sqlCount);
+        $stmtCount->execute($parametres);
+        $total = (int) $stmtCount->fetchColumn();
+
+        $pagesTotal = max(1, (int) ceil($total / $parPage));
+        if ($page > $pagesTotal && $total > 0) {
+            $page = $pagesTotal;
+        }
+
+        $offset = ($page - 1) * $parPage;
+
+        $sql = "SELECT c.id, c.numero_commande, c.statut, c.total, c.date_commande,
+                       COALESCE((SELECT SUM(lc.quantite) FROM ligne_commande lc WHERE lc.commande_id = c.id), 0) AS nb_articles
+                  FROM commande c
+                 {$where}
+              ORDER BY {$clauseTri}
+                 LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        $keys = array_keys($parametres);
+        for ($i = 0, $nbParams = count($keys); $i < $nbParams; $i++) {
+            $k = $keys[$i];
+            $stmt->bindValue(':' . $k, $parametres[$k]);
+        }
+        $stmt->bindValue(':limit', $parPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $commandesRaw = $stmt->fetchAll();
+
+        $items = [];
+        $commandeIds = [];
+        for ($i = 0, $nb = count($commandesRaw); $i < $nb; $i++) {
+            $row = $commandesRaw[$i];
+            $cmdId = (int) $row['id'];
+            $commandeIds[] = $cmdId;
+            $items[$cmdId] = [
+                'id'              => $cmdId,
+                'numero_commande' => (string) $row['numero_commande'],
+                'statut'          => (string) $row['statut'],
+                'total'           => (float) $row['total'],
+                'date_commande'   => (string) $row['date_commande'],
+                'nb_articles'     => (int) $row['nb_articles'],
+                'lignes'          => [],
+            ];
+        }
+
+        // Chargement des lignes de commande et options (variantes) si commandes trouvées
+        if (count($commandeIds) > 0) {
+            $inPlaceholders = implode(',', array_fill(0, count($commandeIds), '?'));
+            $sqlLignes = "SELECT lc.id, lc.commande_id, lc.product_id, lc.variant_id, lc.nom_produit, lc.nom_variante,
+                                 lc.quantite, lc.prix_unitaire, lc.total_ligne,
+                                 (
+                                     SELECT pi.url
+                                       FROM product_image pi
+                                      WHERE pi.product_id = lc.product_id
+                                   ORDER BY pi.est_principale DESC, pi.ordre ASC, pi.id ASC
+                                      LIMIT 1
+                                 ) AS image_url
+                            FROM ligne_commande lc
+                           WHERE lc.commande_id IN ({$inPlaceholders})
+                        ORDER BY lc.id ASC";
+
+            $stmtLignes = $this->pdo->prepare($sqlLignes);
+            for ($i = 0, $nbIds = count($commandeIds); $i < $nbIds; $i++) {
+                $stmtLignes->bindValue($i + 1, $commandeIds[$i], PDO::PARAM_INT);
+            }
+            $stmtLignes->execute();
+            $lignesRaw = $stmtLignes->fetchAll();
+
+            for ($i = 0, $nbLignes = count($lignesRaw); $i < $nbLignes; $i++) {
+                $lRow = $lignesRaw[$i];
+                $cId = (int) $lRow['commande_id'];
+                if (isset($items[$cId])) {
+                    $items[$cId]['lignes'][] = [
+                        'id'            => (int) $lRow['id'],
+                        'product_id'    => (int) $lRow['product_id'],
+                        'variant_id'    => $lRow['variant_id'] !== null ? (int) $lRow['variant_id'] : null,
+                        'nom_produit'   => (string) $lRow['nom_produit'],
+                        'nom_variante'  => $lRow['nom_variante'] !== null ? (string) $lRow['nom_variante'] : null,
+                        'quantite'      => (int) $lRow['quantite'],
+                        'prix_unitaire' => (float) $lRow['prix_unitaire'],
+                        'total_ligne'   => (float) $lRow['total_ligne'],
+                        'image_url'     => $lRow['image_url'] ? (string) $lRow['image_url'] : null,
+                    ];
+                }
+            }
+        }
+
+        return [
+            'items'      => array_values($items),
+            'page'       => $page,
+            'pagesTotal' => $pagesTotal,
+            'total'      => $total,
+            'tri'        => $tri,
+            'parPage'    => $parPage,
+            'statut'     => $statutFiltre,
+            'periode'    => $periodeFiltre,
+        ];
+    }
+
     public function listerParUtilisateur(int $utilisateurId, int $limite = 5): array
     {
         $limite = max(1, min(50, $limite));
