@@ -163,5 +163,140 @@ final class AuthController
 
         Response::json(['connecte' => false]);
     }
-}
 
+    /**
+     * Récupère le profil de l'utilisateur connecté : GET /api/user/profile
+     */
+    public function profil(): void
+    {
+        if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
+            Response::erreur('Non authentifié.', 401);
+            return;
+        }
+
+        $id = (int) $_SESSION['id'];
+        $compte = $this->utilisateurs->trouverParId($id);
+
+        if ($compte === null) {
+            Response::erreur('Utilisateur introuvable.', 404);
+            return;
+        }
+
+        Response::json([
+            'id'          => $compte['id'],
+            'login'       => $compte['login'],
+            'nom'         => $compte['nom'],
+            'email'       => $compte['email'],
+            'role'        => $compte['role'],
+        ]);
+    }
+
+    /**
+     * Modifie les informations de profil (nom, email) : PUT /api/user/profile
+     *
+     * @param Request $requete
+     */
+    public function modifierProfil(Request $requete): void
+    {
+        if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
+            Response::erreur('Non authentifié.', 401);
+            return;
+        }
+
+        $id = (int) $_SESSION['id'];
+        $corps = $requete->corps();
+
+        $nom = trim((string) ($corps['nom'] ?? ''));
+        $email = trim((string) ($corps['email'] ?? ''));
+
+        if ($nom === '' || $email === '') {
+            Response::erreur('Le nom et l\'adresse email sont obligatoires.', 400);
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Response::erreur('Format d\'adresse email invalide.', 400);
+            return;
+        }
+
+        if (mb_strlen($nom) > 100) {
+            Response::erreur('Le nom ne doit pas dépasser 100 caractères.', 400);
+            return;
+        }
+
+        if (mb_strlen($email) > 100) {
+            Response::erreur('L\'adresse email ne doit pas dépasser 100 caractères.', 400);
+            return;
+        }
+
+        if ($this->utilisateurs->emailExistePourAutre($email, $id)) {
+            Response::erreur('Cette adresse email est déjà utilisée par un autre compte.', 409);
+            return;
+        }
+
+        $this->utilisateurs->mettreAJourProfil($id, $nom, $email);
+
+        Response::json([
+            'message' => 'Profil mis à jour avec succès.',
+            'profil'  => [
+                'id'    => $id,
+                'nom'   => $nom,
+                'email' => $email,
+            ],
+        ]);
+    }
+
+    /**
+     * Modifie le mot de passe du client connecté : PUT /api/user/password
+     * DoD spécifique : La modification du mot de passe exige le mot de passe actuel.
+     *
+     * @param Request $requete
+     */
+    public function modifierMotDePasse(Request $requete): void
+    {
+        if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
+            Response::erreur('Non authentifié.', 401);
+            return;
+        }
+
+        $id = (int) $_SESSION['id'];
+        $corps = $requete->corps();
+
+        $ancienMdp  = (string) ($corps['ancien_mot_de_passe'] ?? $corps['ancienMdp'] ?? '');
+        $nouveauMdp = (string) ($corps['nouveau_mot_de_passe'] ?? $corps['nouveauMdp'] ?? '');
+
+        if ($ancienMdp === '') {
+            Response::erreur('Le mot de passe actuel est obligatoire.', 400);
+            return;
+        }
+
+        if ($nouveauMdp === '') {
+            Response::erreur('Le nouveau mot de passe est obligatoire.', 400);
+            return;
+        }
+
+        if (strlen($nouveauMdp) < 6) {
+            Response::erreur('Le nouveau mot de passe doit comporter au moins 6 caractères.', 400);
+            return;
+        }
+
+        $compte = $this->utilisateurs->trouverParId($id);
+        if ($compte === null) {
+            Response::erreur('Utilisateur introuvable.', 404);
+            return;
+        }
+
+        $valide = password_verify($ancienMdp, $compte['mot_de_passe']) || $compte['mot_de_passe'] === $ancienMdp;
+        if (!$valide) {
+            Response::erreur('Le mot de passe actuel est incorrect.', 400);
+            return;
+        }
+
+        $nouveauHash = password_hash($nouveauMdp, PASSWORD_DEFAULT);
+        $this->utilisateurs->mettreAJourMotDePasse($id, $nouveauHash);
+
+        Response::json([
+            'message' => 'Mot de passe modifié avec succès.',
+        ]);
+    }
+}

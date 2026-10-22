@@ -56,6 +56,26 @@ final class OrderController
      *
      * @param Request $requete
      */
+
+    /**
+     * Liste les commandes récentes de l'utilisateur connecté : GET /api/orders
+     *
+     * @param Request $requete
+     */
+    public function listerMesCommandes(Request $requete): void
+    {
+        if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
+            Response::erreur('Vous devez être connecté pour consulter vos commandes.', 401);
+            return;
+        }
+
+        $utilisateurId = (int) $_SESSION['id'];
+        $limite = max(1, min(50, (int) ($requete->parametre('limite') ?? 5)));
+
+        $commandes = $this->orders->listerParUtilisateur($utilisateurId, $limite);
+
+        Response::json($commandes);
+    }
     public function detail(Request $requete): void
     {
         if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
