@@ -1,27 +1,27 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
-  <div class="bg-accent w-full max-w-lg rounded-3xl p-8 text-white shadow-2xl">
-    <h3 id="modal-titre" class="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-4">
-      {{titre}}
-    </h3>
+﻿<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+  <div class="bg-accent w-full max-w-md rounded-2xl p-5 sm:p-6 text-white shadow-xl ring-1 ring-white/10">
+    <div class="mb-4 flex items-center gap-3">
+      <h3 id="modal-titre" class="text-body sm:text-body-lg font-bold text-white">
+        {{titre}}
+      </h3>
+    </div>
 
-    <p class="text-base sm:text-lg text-white/95 leading-relaxed mb-6">
+    <p class="mb-6 text-caption sm:text-body-sm text-white/80 leading-relaxed">
       {{message}}
     </p>
 
-    <slot name="corps"></slot>
-
-    <div class="flex justify-end items-center gap-4 pt-2">
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
       <button
         type="button"
         data-action="annuler"
-        class="inline-flex items-center justify-center rounded-xl bg-brand hover:opacity-90 px-7 py-3 text-sm sm:text-base font-medium text-white transition-opacity shadow-xs cursor-pointer"
+        class="bg-brand w-full sm:w-auto inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/30 px-4 py-2.5 text-body-sm font-medium text-white transition-colors hover:bg-white/10"
       >
         {{boutonAnnuler}}
       </button>
       <button
         type="button"
         data-action="confirmer"
-        class="inline-flex items-center justify-center rounded-xl bg-input hover:bg-input-hover px-7 py-3 text-sm sm:text-base font-medium text-white transition-colors shadow-xs cursor-pointer"
+        class="w-full sm:w-auto inline-flex cursor-pointer items-center justify-center rounded-lg bg-input px-4 py-2.5 text-body-sm font-medium text-white shadow-xs transition-colors hover:bg-input-hover"
       >
         {{boutonConfirmer}}
       </button>

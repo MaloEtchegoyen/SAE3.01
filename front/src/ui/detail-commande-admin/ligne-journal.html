@@ -1,19 +1,22 @@
-<tr class="transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
-  <td class="px-3 py-2 text-zinc-500 whitespace-nowrap dark:text-zinc-400">
-    {{date_formatee}}
+<tr class="block md:table-row rounded-xl border border-neutral-200 dark:border-zinc-800 bg-neutral-50/50 dark:bg-zinc-800/20 p-3 shadow-xs md:rounded-none md:border-0 md:bg-transparent md:p-0 transition-colors md:hover:bg-zinc-50/50 md:dark:hover:bg-zinc-800/30">
+  <td class="flex items-center justify-between py-1 md:table-cell md:px-3 md:py-2 text-zinc-500 dark:text-zinc-400">
+    <span class="font-semibold text-neutral-600 dark:text-neutral-300 md:hidden">Date &amp; heure</span>
+    <span>{{date_formatee}}</span>
   </td>
-  <td class="px-3 py-2 font-medium text-zinc-800 dark:text-zinc-200">
-    {{admin_login}}
+  <td class="flex items-center justify-between py-1 md:table-cell md:px-3 md:py-2 font-medium text-zinc-800 dark:text-zinc-200">
+    <span class="font-semibold text-neutral-600 dark:text-neutral-300 md:hidden">Administrateur</span>
+    <span>{{admin_login}}</span>
   </td>
-  <td class="px-3 py-2">
+  <td class="flex items-center justify-between py-1 md:table-cell md:px-3 md:py-2">
+    <span class="font-semibold text-neutral-600 dark:text-neutral-300 md:hidden">Changement</span>
     <span class="inline-flex items-center gap-1.5 font-medium">
       <span class="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{{ancien_statut}}</span>
       <span class="text-zinc-400">&rarr;</span>
       <span class="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">{{nouveau_statut}}</span>
     </span>
   </td>
-  <td class="px-3 py-2 text-zinc-600 dark:text-zinc-300">
-    {{commentaire}}
+  <td class="flex items-center justify-between py-1 md:table-cell md:px-3 md:py-2 text-zinc-600 dark:text-zinc-300 pt-2 mt-1 border-t border-neutral-200 dark:border-zinc-700 md:border-0 md:pt-0 md:mt-0">
+    <span class="font-semibold text-neutral-600 dark:text-neutral-300 md:hidden">Motif</span>
+    <span class="text-right md:text-left">{{commentaire}}</span>
   </td>
 </tr>
-

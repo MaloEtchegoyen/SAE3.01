@@ -1,22 +1,14 @@
-<header class="sticky top-0 z-30 bg-brand">
-  <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3.5 md:px-10">
+﻿<header class="sticky top-0 z-30 bg-brand shadow-xs">
+  <div class="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 py-3 sm:px-6 md:px-10 lg:px-12 xl:px-16">
     <a href="/" data-link class="flex items-center">
-      <img data-ref="logo" alt="Café Feuillette" class="h-10 w-auto md:h-11">
+      <img data-ref="logo" alt="Café Feuillette" class="h-9 w-auto sm:h-10 md:h-11">
     </a>
 
-    <!-- Le routeur pose aria-current="page" sur le lien de la page affichée. -->
-    <nav class="flex items-center gap-6 text-[0.95rem] font-normal text-white md:gap-10">
-      <a href="/" data-link class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
-        Catalogue
-      </a>
-      <a href="{{lienCompte}}" data-link data-ref="lien-compte" class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
-        {{libelleCompte}}
-      </a>
-      <button type="button" data-action="logout" class="cursor-pointer transition-opacity hover:opacity-80">
-        Se déconnecter
-      </button>
-      <a href="/panier" data-link class="flex items-center gap-2.5 transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- Navigation Desktop & Actions rapides -->
+    <div class="flex items-center gap-3 sm:gap-6">
+      <!-- Lien Panier toujours accessible directement sur mobile et desktop -->
+      <a href="/panier" data-link class="flex items-center gap-2 rounded-lg bg-black/10 px-3 py-1.5 text-body-sm font-medium text-white transition-opacity hover:opacity-80 md:bg-transparent md:px-0 md:py-0 md:text-[0.95rem] aria-[current=page]:font-semibold">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="m15 11-1 9" />
           <path d="m19 11-4-7" />
           <path d="M2 11h20" />
@@ -27,6 +19,55 @@
         </svg>
         <span data-ref="compteur-panier">Panier ({{nb}})</span>
       </a>
-    </nav>
+
+      <!-- Navigation Desktop (cachée sur mobile) -->
+      <nav class="hidden md:flex md:items-center md:gap-8 md:text-[0.95rem] md:font-normal text-white">
+        <a href="/" data-link class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
+          Catalogue
+        </a>
+        <a href="{{lienCompte}}" data-link data-ref="lien-compte" class="transition-opacity hover:opacity-80 aria-[current=page]:font-medium">
+          {{libelleCompte}}
+        </a>
+        <button type="button" data-action="logout" class="cursor-pointer transition-opacity hover:opacity-80">
+          Se déconnecter
+        </button>
+      </nav>
+
+      <!-- Bouton Menu Burger pour Mobile -->
+      <button
+        type="button"
+        data-action="toggle-menu"
+        aria-label="Ouvrir le menu de navigation"
+        aria-expanded="false"
+        class="flex h-10 w-10 items-center justify-center rounded-lg text-white transition hover:bg-black/10 md:hidden cursor-pointer"
+      >
+        <svg data-ref="icone-burger" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg data-ref="icone-fermer" xmlns="http://www.w3.org/2000/svg" class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
   </div>
+
+  <!-- Menu déroulant Mobile -->
+  <nav
+    data-ref="menu-mobile"
+    class="hidden flex-col gap-3 border-t border-white/20 px-4 pt-3 pb-4 text-white md:hidden bg-brand"
+  >
+    <a href="/" data-link class="flex items-center rounded-lg px-3 py-2 text-body font-medium transition hover:bg-black/10 aria-[current=page]:bg-black/20">
+      Catalogue
+    </a>
+    <a href="{{lienCompte}}" data-link data-ref="lien-compte-mobile" class="flex items-center rounded-lg px-3 py-2 text-body font-medium transition hover:bg-black/10 aria-[current=page]:bg-black/20">
+      {{libelleCompte}}
+    </a>
+    <button
+      type="button"
+      data-action="logout-mobile"
+      class="flex w-full items-center rounded-lg px-3 py-2 text-left text-body font-medium transition hover:bg-black/10 cursor-pointer text-white"
+    >
+      Se déconnecter
+    </button>
+  </nav>
 </header>

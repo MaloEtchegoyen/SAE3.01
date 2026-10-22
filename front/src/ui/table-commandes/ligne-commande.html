@@ -1,5 +1,6 @@
-<tr class="transition-colors hover:bg-white/10" data-ligne-commande="{{id}}">
-  <td class="w-12 px-4 py-4 text-center">
+<tr class="block md:table-row rounded-2xl border border-white/20 bg-brand p-4 shadow-xs md:rounded-none md:border-0 md:p-0 transition-colors md:hover:bg-white/10" data-ligne-commande="{{id}}">
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:w-12 md:px-3 md:py-3 sm:px-4 sm:py-4 md:text-center border-b border-white/10 pb-2 mb-1 md:border-0 md:pb-0 md:mb-0">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Sélectionner</span>
     <input
       type="checkbox"
       data-action="selectionner-ligne"
@@ -8,20 +9,24 @@
       class="h-4 w-4 rounded-sm border-white/60 bg-transparent text-sand-600 cursor-pointer focus:ring-0"
     />
   </td>
-  <td class="px-4 py-4 font-mono font-medium whitespace-nowrap">
-    {{numero_commande}}
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4 font-mono font-medium">
+    <span class="text-caption font-semibold text-white/70 md:hidden font-sans">Commande</span>
+    <span>{{numero_commande}}</span>
   </td>
-  <td class="px-4 py-4 whitespace-nowrap">
-    {{date_formatee}}
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Date</span>
+    <span>{{date_formatee}}</span>
   </td>
-  <td class="px-4 py-4">
-    {{utilisateur_login}}
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Client</span>
+    <span>{{utilisateur_login}}</span>
   </td>
-  <td class="px-4 py-4 whitespace-nowrap">
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Statut</span>
     <div class="relative inline-block">
       <select
         data-action="changer-statut"
-        class="appearance-none rounded-lg border border-white/60 bg-transparent px-3 py-1.5 pr-8 text-xs font-medium text-white cursor-pointer transition-colors hover:bg-white/10 focus:bg-strong focus:outline-hidden"
+        class="appearance-none rounded-lg border border-white/60 bg-transparent px-2.5 py-1 sm:px-3 sm:py-1.5 pr-7 sm:pr-8 text-caption font-medium text-white cursor-pointer transition-colors hover:bg-white/10 focus:bg-strong focus:outline-hidden"
       >
         <option value="en cours" class="bg-strong text-white">En cours</option>
         <option value="disponible" class="bg-strong text-white">Disponible</option>
@@ -35,14 +40,16 @@
       </span>
     </div>
   </td>
-  <td class="px-4 py-4 whitespace-nowrap font-medium">
-    {{total_formate}}
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4 font-medium">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Total</span>
+    <span>{{total_formate}}</span>
   </td>
-  <td class="px-4 py-4 whitespace-nowrap">
+  <td class="flex items-center justify-between py-1.5 md:table-cell md:px-3 md:py-3 sm:px-4 sm:py-4 pt-2 mt-1 border-t border-white/10 md:border-0 md:pt-0 md:mt-0">
+    <span class="text-caption font-semibold text-white/70 md:hidden">Action</span>
     <button
       type="button"
       data-action="detail"
-      class="font-medium text-white hover:underline cursor-pointer"
+      class="font-medium text-white underline hover:opacity-80 cursor-pointer"
     >
       Détails
     </button>

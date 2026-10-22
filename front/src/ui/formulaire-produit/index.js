@@ -1,4 +1,4 @@
-import { htmlToFragment } from "../../lib/utils.js";
+﻿import { htmlToFragment } from "../../lib/utils.js";
 import template from "./template.html?raw";
 
 /**
@@ -187,7 +187,7 @@ let FormulaireProduitView = {
           let btnSuppr = document.createElement("button");
           btnSuppr.type = "button";
           btnSuppr.className =
-            "absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600/80 text-xs font-bold text-white hover:bg-red-600 cursor-pointer shadow-xs transition-colors";
+            "absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600/80 text-caption font-bold text-white hover:bg-red-600 cursor-pointer shadow-xs transition-colors";
           btnSuppr.title = "Retirer cette image";
           btnSuppr.innerHTML = "&times;";
           btnSuppr.addEventListener("click", () => {
@@ -305,7 +305,7 @@ let FormulaireProduitView = {
         let champNomOpt = document.createElement("div");
         champNomOpt.className = "flex flex-1 min-w-[200px] flex-col gap-1";
         let labelNom = document.createElement("label");
-        labelNom.className = "text-xs font-semibold text-white/90";
+        labelNom.className = "text-caption font-semibold text-white/90";
         labelNom.textContent = `Option n°${optIndex + 1} *`;
         let inputNom = document.createElement("input");
         inputNom.type = "text";
@@ -313,7 +313,7 @@ let FormulaireProduitView = {
         inputNom.placeholder = "ex. Taille, Parfum, Type de lait...";
         inputNom.value = opt.nom || "";
         inputNom.className =
-          "h-9 rounded-lg border border-white/20 bg-white/10 px-3 text-xs text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+          "h-9 rounded-lg border border-white/20 bg-white/10 px-3 text-caption text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
         inputNom.addEventListener("input", (e) => {
           opt.nom = e.target.value;
         });
@@ -323,7 +323,7 @@ let FormulaireProduitView = {
         // Case à cocher obligatoire
         let champObligatoire = document.createElement("label");
         champObligatoire.className =
-          "flex cursor-pointer items-center gap-2 text-xs font-medium text-white/90 select-none pt-4";
+          "flex cursor-pointer items-center gap-2 text-caption font-medium text-white/90 select-none pt-4";
         let checkboxObligatoire = document.createElement("input");
         checkboxObligatoire.type = "checkbox";
         checkboxObligatoire.checked = opt.obligatoire !== false && opt.obligatoire !== 0;
@@ -338,7 +338,7 @@ let FormulaireProduitView = {
         let btnSupprOpt = document.createElement("button");
         btnSupprOpt.type = "button";
         btnSupprOpt.className =
-          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-colors mt-4";
+          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-caption font-medium text-red-300 hover:bg-red-500/20 transition-colors mt-4";
         btnSupprOpt.textContent = "Supprimer l'option";
         btnSupprOpt.addEventListener("click", () => {
           optionsListe.splice(optIndex, 1);
@@ -355,7 +355,7 @@ let FormulaireProduitView = {
         sectionValeurs.className = "space-y-2 border-t border-white/10 pt-3";
 
         let labelVals = document.createElement("span");
-        labelVals.className = "block text-xs font-medium text-white/80";
+        labelVals.className = "block text-caption font-medium text-white/80";
         labelVals.textContent = "Valeurs de l'option (avec surcoût éventuel) :";
         sectionValeurs.appendChild(labelVals);
 
@@ -375,7 +375,7 @@ let FormulaireProduitView = {
           inputNomVal.placeholder = "Libellé (ex. Simple, Double, Vanille...)";
           inputNomVal.value = val.nom || "";
           inputNomVal.className =
-            "h-8 flex-1 min-w-[150px] rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+            "h-8 flex-1 min-w-[150px] rounded-lg border border-white/20 bg-white/10 px-2.5 text-caption text-white placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
           inputNomVal.addEventListener("input", (e) => {
             val.nom = e.target.value;
           });
@@ -383,7 +383,7 @@ let FormulaireProduitView = {
           let conteneurSurcout = document.createElement("div");
           conteneurSurcout.className = "flex items-center gap-1";
           let labelSurcout = document.createElement("span");
-          labelSurcout.className = "text-xs text-white/70";
+          labelSurcout.className = "text-caption text-white/70";
           labelSurcout.textContent = "+";
           let inputSurcout = document.createElement("input");
           inputSurcout.type = "number";
@@ -392,12 +392,12 @@ let FormulaireProduitView = {
           inputSurcout.placeholder = "0.00";
           inputSurcout.value = val.surcout !== undefined ? val.surcout : 0;
           inputSurcout.className =
-            "h-8 w-20 rounded-lg border border-white/20 bg-white/10 px-2 text-xs text-white text-right placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
+            "h-8 w-20 rounded-lg border border-white/20 bg-white/10 px-2 text-caption text-white text-right placeholder-white/40 focus:border-white focus:bg-white/20 focus:outline-none";
           inputSurcout.addEventListener("input", (e) => {
             val.surcout = parseFloat(e.target.value) || 0;
           });
           let spanEuro = document.createElement("span");
-          spanEuro.className = "text-xs text-white/70";
+          spanEuro.className = "text-caption text-white/70";
           spanEuro.textContent = "€";
 
           conteneurSurcout.appendChild(labelSurcout);
@@ -407,7 +407,7 @@ let FormulaireProduitView = {
           let btnSupprVal = document.createElement("button");
           btnSupprVal.type = "button";
           btnSupprVal.className =
-            "flex h-7 w-7 items-center justify-center rounded-lg bg-red-600/60 text-xs font-bold text-white hover:bg-red-600 cursor-pointer transition-colors";
+            "flex h-7 w-7 items-center justify-center rounded-lg bg-red-600/60 text-caption font-bold text-white hover:bg-red-600 cursor-pointer transition-colors";
           btnSupprVal.title = "Supprimer cette valeur";
           btnSupprVal.innerHTML = "&times;";
           btnSupprVal.addEventListener("click", () => {
@@ -426,7 +426,7 @@ let FormulaireProduitView = {
         let btnAjouterVal = document.createElement("button");
         btnAjouterVal.type = "button";
         btnAjouterVal.className =
-          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1 text-xs font-medium text-white/90 hover:bg-white/10 transition-colors mt-1";
+          "inline-flex cursor-pointer items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1 text-caption font-medium text-white/90 hover:bg-white/10 transition-colors mt-1";
         btnAjouterVal.textContent = "+ Ajouter une valeur";
         btnAjouterVal.addEventListener("click", () => {
           opt.valeurs.push({ nom: "", surcout: 0 });

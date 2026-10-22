@@ -1,4 +1,4 @@
-<article
+﻿<article
   data-cle="{{cle}}"
   class="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-border bg-white p-4 md:p-6 shadow-xs text-content-primary"
 >
@@ -9,19 +9,19 @@
       class="h-20 w-20 shrink-0 rounded-xl border border-border object-cover bg-neutral-100"
     />
     <div class="flex flex-col">
-      <h3 class="text-base md:text-lg font-bold leading-tight text-content-primary">
+      <h3 class="text-body md:text-body-lg font-bold leading-tight text-content-primary">
         {{nom}}
       </h3>
-      <span class="text-xs text-content-muted mt-0.5 {{classe_option}}">
+      <span class="text-caption text-content-muted mt-0.5 {{classe_option}}">
         {{option}}
       </span>
-      <span class="text-xs md:text-sm text-content-secondary mt-1">
+      <span class="text-caption md:text-body-sm text-content-secondary mt-1">
         {{prix_unitaire}} / unité
       </span>
       <button
         type="button"
         data-action="supprimer"
-        class="mt-1.5 text-xs text-content-muted hover:text-red-600 underline text-left cursor-pointer transition w-fit"
+        class="mt-1.5 text-caption text-content-muted hover:text-red-600 underline text-left cursor-pointer transition w-fit"
       >
         Supprimer
       </button>
@@ -41,7 +41,7 @@
       </button>
       <span
         data-ref="valeur-quantite"
-        class="w-10 text-center text-sm font-semibold text-content-primary"
+        class="w-10 text-center text-body-sm font-semibold text-content-primary"
       >
         {{quantite}}
       </span>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Total de la ligne -->
-    <span class="w-24 text-right text-base md:text-lg font-bold text-content-primary">
+    <span class="w-24 text-right text-body md:text-body-lg font-bold text-content-primary">
       {{total_ligne}}
     </span>
   </div>

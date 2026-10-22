@@ -1,5 +1,6 @@
-<section class="h-screen flex justify-center items-center bg-desktop bg-no-repeat bg-cover">
-  <slot name="connexion"></slot>
-  <slot name="message"></slot>
+<section class="min-h-screen flex justify-center items-center bg-desktop bg-no-repeat bg-cover p-4 sm:p-6 overflow-y-auto">
+  <div class="w-full max-w-md">
+    <slot name="message"></slot>
+    <slot name="connexion"></slot>
+  </div>
 </section>
-

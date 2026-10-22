@@ -1,4 +1,4 @@
-import { AuthData } from "../../data/auth.js";
+﻿import { AuthData } from "../../data/auth.js";
 import { OrderData } from "../../data/order.js";
 import { navigate } from "../../lib/router.js";
 import { htmlToFragment, escapeHtml } from "../../lib/utils.js";
@@ -168,7 +168,7 @@ V.createPageFragment = function () {
       let ligne = cmd.lignes[i];
       let imgHtml = ligne.image_url
         ? `<img src="${escapeHtml(ligne.image_url)}" alt="${escapeHtml(ligne.nom_produit)}" class="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />`
-        : `<div class="h-14 w-14 rounded-xl bg-subtle border border-border flex items-center justify-center text-xs text-content-muted shrink-0">Café</div>`;
+        : `<div class="h-14 w-14 rounded-xl bg-subtle border border-border flex items-center justify-center text-caption text-content-muted shrink-0">Café</div>`;
 
       let itemHtml = `
         <div class="flex items-center justify-between py-3.5 gap-4">
@@ -178,14 +178,14 @@ V.createPageFragment = function () {
               <p class="font-semibold text-content-primary truncate">${escapeHtml(ligne.nom_produit)}</p>
               ${
                 ligne.nom_variante
-                  ? `<p class="text-xs text-content-secondary font-medium">Option : ${escapeHtml(ligne.nom_variante)}</p>`
+                  ? `<p class="text-caption text-content-secondary font-medium">Option : ${escapeHtml(ligne.nom_variante)}</p>`
                   : ""
               }
-              <p class="text-xs text-content-muted">Quantité : <strong class="text-content-primary">${ligne.quantite}</strong> × ${formaterPrix(ligne.prix_unitaire)}</p>
+              <p class="text-caption text-content-muted">Quantité : <strong class="text-content-primary">${ligne.quantite}</strong> × ${formaterPrix(ligne.prix_unitaire)}</p>
             </div>
           </div>
           <div class="text-right shrink-0">
-            <span class="font-bold text-content-primary text-sm sm:text-base">${formaterPrix(ligne.total_ligne)}</span>
+            <span class="font-bold text-content-primary text-body-sm sm:text-body">${formaterPrix(ligne.total_ligne)}</span>
           </div>
         </div>
       `;

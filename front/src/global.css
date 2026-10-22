@@ -1,6 +1,117 @@
 @import "tailwindcss";
 
+/* Polices locales - Poppins */
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-ThinItalic.ttf') format('truetype');
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-ExtraLightItalic.ttf') format('truetype');
+  font-weight: 200;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-LightItalic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('../assets/font/Poppins-BlackItalic.ttf') format('truetype');
+  font-weight: 900;
+  font-style: italic;
+}
+
 @theme inline {
+  --font-sans: 'Poppins', sans-serif;
 
   /* Variables Sémantiques (Surface) */
   --color-default: var(--color-white);
@@ -30,27 +141,29 @@
   --color-interaction-emphasis: var(--color-sage-800);
 
   --background-image-desktop : var(--back-desktop);
+
+  /* Variables Sémantiques (Typographie - Tailles & Rôles) */
+  --text-caption: var(--font-size-xs);
+  --text-body-sm: var(--font-size-sm);
+  --text-body: var(--font-size-base);
+  --text-body-lg: var(--font-size-lg);
+  --text-title-sm: var(--font-size-xl);
+  --text-title-md: var(--font-size-2xl);
+  --text-title-lg: var(--font-size-3xl);
+  --text-title-xl: var(--font-size-4xl);
+  --text-display: var(--font-size-5xl);
+
+  --font-size-caption: var(--font-size-xs);
+  --font-size-body-sm: var(--font-size-sm);
+  --font-size-body: var(--font-size-base);
+  --font-size-body-lg: var(--font-size-lg);
+  --font-size-title-sm: var(--font-size-xl);
+  --font-size-title-md: var(--font-size-2xl);
+  --font-size-title-lg: var(--font-size-3xl);
+  --font-size-title-xl: var(--font-size-4xl);
+  --font-size-display: var(--font-size-5xl);
 }
 
-/*
-  La variante dark ne s'applique que via la classe .theme-dark sur <html>.
-  L'application étant uniquement en thème clair, cette classe n'est jamais posée,
-  ce qui neutralise toute règle dark: et évite le basculement automatique via l'OS.
-*/
-@custom-variant dark (&:where(.theme-dark, .theme-dark *));
-
-/*
-  Bandeau des cartes de film : un dégradé dont la teinte est calculée à partir
-  du titre (voir ui/carte-film/index.js). La teinte arrive par la variable
-  --teinte, posée dans le template. Aucune image n'est chargée.
-*/
-@utility bandeau-clair {
-  background-image: linear-gradient(
-    160deg,
-    hsl(var(--teinte) 28% 96%),
-    hsl(calc(var(--teinte) + 25) 28% 91%)
-  );
-}
 
 /*
   Badge d'état de stock : les styles sont pilotés par l'attribut data-stock
@@ -73,6 +186,10 @@
 }
 
 @layer base {
+
+  body {
+    font-family: var(--font-sans, 'Poppins', sans-serif);
+  }
 
   :root {
     /* Primitive Tokens */
@@ -98,8 +215,27 @@
     --color-gold-500: oklch(74.78% 0.0796 85.64);
 
     --back-desktop: linear-gradient(oklch(54.171% 0.00006 271.152 / 0.45), oklch(54.171% 0.00006 271.152 / 0.45)), url('../assets/back/cafeFeuillette-desktop.jpg');
-  }
 
+    /* Primitive Tokens - Typographie (Échelle modulaire standard web) */
+    --font-size-2xs: 0.6875rem; /* 11px */
+    --font-size-xs: 0.75rem;    /* 12px */
+    --font-size-sm: 0.875rem;   /* 14px */
+    --font-size-base: 1rem;     /* 16px - Base standard */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.25rem;    /* 20px */
+    --font-size-2xl: 1.5rem;    /* 24px */
+    --font-size-3xl: 1.875rem;  /* 30px */
+    --font-size-4xl: 2.25rem;   /* 36px */
+    --font-size-5xl: 3rem;      /* 48px */
+
+    /* Primitive Tokens - Hauteurs de ligne (Line Heights) */
+    --line-height-tight: 1.25;
+    --line-height-snug: 1.375;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+  }
+  
+  
   /* Un seul anneau de focus pour toute l'application, visible uniquement au
      clavier : :focus-visible ne se déclenche pas sur un clic de souris. */
   :where(a, button, select, input):focus-visible {

@@ -1,14 +1,14 @@
-<section class="mx-auto max-w-7xl px-6 pt-6 pb-16 md:px-10">
+﻿<section class="mx-auto max-w-7xl px-4 pt-4 pb-12 sm:px-6 md:px-10">
   <!-- Fil d'Ariane et retour catégorie -->
-  <div class="mb-8 flex flex-col gap-3">
-    <nav aria-label="Fil d'Ariane" class="flex flex-wrap items-center gap-2 text-sm text-brand/70">
+  <div class="mb-6 sm:mb-8 flex flex-col gap-3">
+    <nav aria-label="Fil d'Ariane" class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-caption sm:text-body-sm text-brand/70">
       <a href="/" data-link class="transition-colors hover:text-brand">Accueil</a>
       <span aria-hidden="true" class="text-brand/40">&rsaquo;</span>
       <a data-ref="lien-categorie-ariane" href="/" data-link class="transition-colors hover:text-brand">
         {{categorie}}
       </a>
       <span aria-hidden="true" class="text-brand/40">&rsaquo;</span>
-      <span class="font-medium text-brand truncate max-w-xs md:max-w-md">
+      <span class="font-medium text-brand truncate max-w-[180px] sm:max-w-xs md:max-w-md">
         {{nom}}
       </span>
     </nav>
@@ -18,7 +18,7 @@
         data-ref="lien-retour"
         href="/"
         data-link
-        class="inline-flex items-center gap-2 text-sm font-semibold text-content-action hover:underline"
+        class="inline-flex items-center gap-2 text-caption sm:text-body-sm font-semibold text-content-action hover:underline"
       >
         <span aria-hidden="true">&larr;</span>
         <span>Retour aux {{categorie}}</span>
@@ -30,7 +30,7 @@
   <slot name="message"></slot>
 
   <!-- Grille principale de détail produit : Galerie à gauche, Fiche à droite -->
-  <div data-ref="conteneur-principal" class="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+  <div data-ref="conteneur-principal" class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-14">
     <!-- Colonne Galerie d'images (7 colonnes sur desktop) -->
     <div class="lg:col-span-7">
       <slot name="galerie"></slot>
@@ -42,4 +42,3 @@
     </div>
   </div>
 </section>
-

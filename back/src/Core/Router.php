@@ -10,7 +10,7 @@ use RuntimeException;
  * Associe une requête entrante au contrôleur chargé de la traiter.
  *
  * Les routes sont déclarées dans back/src/routes.php sous la forme :
- *     'GET /api/films' => [CatalogueController::class, 'index']
+ *     'GET /api/products' => [ProductController::class, 'catalogue']
  */
 final class Router
 {
@@ -75,7 +75,7 @@ final class Router
     }
 
     /**
-     * « GET   /api/films » et « GET /api/films » désignent la même route :
+     * « GET   /api/products » et « GET /api/products » désignent la même route :
      * on réduit les espaces multiples pour permettre un alignement lisible
      * dans le fichier de déclaration.
      */

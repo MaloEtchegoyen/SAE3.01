@@ -4,12 +4,7 @@
 
 L'agent a l'**interdiction formelle et absolue** d'exécuter la moindre commande `git` dans le terminal ou via tout outil d'exécution de commandes.
 
-Cette interdiction s'applique à l'ensemble des commandes Git, sans exception, notamment :
-- `git status`
-- `git diff`
-- `git log`
-- `git add`
-- `git commit`
+Cette interdiction s'applique à l'ensemble des commandes Git, notamment :
 - `git push`
 - `git pull` / `git fetch`
 - `git checkout` / `git switch`
@@ -17,6 +12,13 @@ Cette interdiction s'applique à l'ensemble des commandes Git, sans exception, n
 - `git merge` / `git rebase`
 - `git stash`
 - `git reset`
+
+exception, commande autorisé sous demande : 
+- `git status`
+- `git diff`
+- `git log`
+- `git add`
+- `git commit`
 
 ## Justification et périmètre
 

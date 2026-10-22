@@ -1,4 +1,4 @@
-<article data-id="{{id}}" data-stock="{{code_stock}}" class="group relative flex h-100 w-full flex-col justify-end overflow-hidden rounded-3xl text-default border border-border">
+﻿<article data-id="{{id}}" data-stock="{{code_stock}}" class="group relative flex aspect-square w-full flex-col justify-end overflow-hidden  text-default border border-border hover:scale-[0.97] transition-transform duration-300">
   <a
     href="/produit/{{slug}}"
     data-link
@@ -9,35 +9,34 @@
     <img
       src="{{image_url}}"
       alt="{{nom}}"
-      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+      class="h-full w-full object-cover"
     />
   </a>
   <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/20 transition-opacity duration-300 group-hover:opacity-90"></div>
-  <div class="w-full z-10 flex justify-between p-4">
-    <h3 class="mb-2 text-lg font-bold leading-snug tracking-tight drop-shadow-sm line-clamp-2">
-      <a href="/produit/{{slug}}" data-link class="hover:underline transition-opacity">
+  <div class="pointer-events-none w-full z-10 flex items-start justify-between gap-3 p-4">
+    <h3 class="mb-1 text-body sm:text-body-lg font-bold leading-snug tracking-tight drop-shadow-sm line-clamp-2">
+      <a href="/produit/{{slug}}" data-link class="pointer-events-auto hover:underline transition-opacity">
         {{nom}}
       </a>
     </h3>
-      <span class="text-xl tracking-tight drop-shadow-sm">
-        {{prix}}
-      </span>
+    <span class="shrink-0 text-body-lg sm:text-title-sm font-bold tracking-tight drop-shadow-sm">
+      {{prix}}
+    </span>
   </div>
-    <div class="relative justify-between z-10 flex px-4 pb-4">
-      <a
-        href="/produit/{{slug}}"
-        data-link
-        class="text-center px-5 p-2 rounded-md bg-input hover:bg-input-hover text-white text-sm font-medium transition cursor-pointer"
-      >
-        Plus de détails
-      </a>
+  <div class="pointer-events-none relative z-10 flex flex-wrap items-center justify-between gap-2.5 px-4 pb-4">
+    <a
+      href="/produit/{{slug}}"
+      data-link
+      class="pointer-events-auto inline-flex items-center justify-center rounded-md bg-input px-4 py-2 text-center text-caption sm:text-body-sm font-medium text-white transition hover:bg-input-hover cursor-pointer"
+    >
+      Plus de détails
+    </a>
     <span
       data-ref="badge-stock"
       data-stock="{{code_stock}}"
-      class="badge-stock inline-flex items-center border border-border rounded-md px-5 text-xs font-semibold tracking-wide shadow-xs"
+      class="badge-stock inline-flex items-center rounded-md border border-border px-3.5 py-1.5 text-caption font-semibold tracking-wide shadow-xs"
     >
       {{etat_stock}}
     </span>
   </div>
 </article>
-
