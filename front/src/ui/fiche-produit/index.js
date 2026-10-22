@@ -1,4 +1,4 @@
-import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
+﻿import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
 import { formaterPrix } from "../../lib/format.js";
 import template from "./template.html?raw";
 
@@ -144,7 +144,7 @@ let FicheProduitView = {
 
         let btnVar = document.createElement("button");
         btnVar.type = "button";
-        btnVar.className = `px-3.5 py-1.5 rounded-xl border text-sm font-medium transition cursor-pointer ${
+        btnVar.className = `px-3.5 py-1.5 rounded-xl border text-body-sm font-medium transition cursor-pointer ${
           estChoisie
             ? "border-brand bg-brand/10 text-brand font-semibold shadow-2xs"
             : "border-border text-content-secondary hover:border-brand/40"
@@ -173,11 +173,11 @@ let FicheProduitView = {
         labelEl.className = "flex items-center justify-between";
 
         let spanNom = document.createElement("span");
-        spanNom.className = "text-sm font-semibold text-content-primary";
+        spanNom.className = "text-body-sm font-semibold text-content-primary";
         spanNom.textContent = opt.nom;
 
         let spanBadge = document.createElement("span");
-        spanBadge.className = opt.obligatoire ? "text-xs text-default font-medium" : "text-xs text-content-muted";
+        spanBadge.className = opt.obligatoire ? "text-caption text-default font-medium" : "text-caption text-content-muted";
         spanBadge.textContent = opt.obligatoire ? "Choix requis" : "Optionnel";
 
         labelEl.appendChild(spanNom);
@@ -193,7 +193,7 @@ let FicheProduitView = {
 
           let btnVal = document.createElement("button");
           btnVal.type = "button";
-          btnVal.className = `flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition cursor-pointer ${
+          btnVal.className = `flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-body-sm font-medium transition cursor-pointer ${
             estChoisie
               ? "bg-brand text-default border-border font-semibold shadow-2xs"
               : "border-border bg-input hover:bg-input-hover text-white"

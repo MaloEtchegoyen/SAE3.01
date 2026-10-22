@@ -1,4 +1,4 @@
-import { CartData } from "../../data/cart.js";
+﻿import { CartData } from "../../data/cart.js";
 import { AuthData } from "../../data/auth.js";
 import { OrderData } from "../../data/order.js";
 import { navigate } from "../../lib/router.js";
@@ -170,7 +170,7 @@ V.createPageFragment = function () {
       let totalLigne = Number(article.prix || 0) * Number(article.quantite || 1);
       let imgHtml = article.image
         ? `<img src="${escapeHtml(article.image)}" alt="${escapeHtml(article.nom)}" class="h-16 w-16 rounded-xl object-cover border border-feuillette-creme/40 shrink-0" />`
-        : `<div class="h-16 w-16 rounded-xl bg-feuillette-creme/40 flex items-center justify-center text-xs text-feuillette-charbon/50 shrink-0">Café</div>`;
+        : `<div class="h-16 w-16 rounded-xl bg-feuillette-creme/40 flex items-center justify-center text-caption text-feuillette-charbon/50 shrink-0">Café</div>`;
 
       let ligneHtml = `
         <div class="flex items-center justify-between py-4 gap-4">
@@ -180,14 +180,14 @@ V.createPageFragment = function () {
               <p class="font-semibold text-feuillette-charbon truncate">${escapeHtml(article.nom)}</p>
               ${
                 article.nomVariante
-                  ? `<p class="text-xs text-feuillette-charbon/70 font-medium">Option : ${escapeHtml(article.nomVariante)}</p>`
+                  ? `<p class="text-caption text-feuillette-charbon/70 font-medium">Option : ${escapeHtml(article.nomVariante)}</p>`
                   : ""
               }
-              <p class="text-xs text-feuillette-charbon/60 mt-0.5">Quantité : <span class="font-medium text-feuillette-charbon">${article.quantite}</span> × ${formaterPrix(article.prix)}</p>
+              <p class="text-caption text-feuillette-charbon/60 mt-0.5">Quantité : <span class="font-medium text-feuillette-charbon">${article.quantite}</span> × ${formaterPrix(article.prix)}</p>
             </div>
           </div>
           <div class="text-right shrink-0">
-            <span class="font-bold text-feuillette-charbon text-base">${formaterPrix(totalLigne)}</span>
+            <span class="font-bold text-feuillette-charbon text-body">${formaterPrix(totalLigne)}</span>
           </div>
         </div>
       `;

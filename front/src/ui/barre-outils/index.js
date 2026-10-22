@@ -1,13 +1,8 @@
 import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
 import template from "./template.html?raw";
 
-const CLASSE_BOUTON_ACTIF =
-  "px-4 py-2 rounded-xl text-sm font-medium transition-all bg-input text-default border border-border shadow-xs cursor-pointer inline-flex items-center";
-const CLASSE_BOUTON_INACTIF =
-  "px-4 py-2 rounded-xl text-sm font-medium transition-all bg-brand text-default border border-border hover:bg-input-hover cursor-pointer inline-flex items-center";
-
 /**
- * Barre d'outils, fil d'Ariane et filtres du catalogue (catégories sous forme de liens / pilules).
+ * Barre d'outils, fil d'Ariane et filtres du catalogue (sélection des catégories sous forme de liste déroulante).
  *
  * Composant purement présentatif : il reçoit la liste des catégories, la catégorie
  * sélectionnée, le fil d'Ariane et le total, et signale les changements via les callbacks dans `actions`.
@@ -46,49 +41,49 @@ let BarreOutilsView = {
       })
     );
 
-    let conteneurCategories = fragment.querySelector('[data-ref="categories"]');
-    if (!conteneurCategories) return fragment;
+    let selectCategories = fragment.querySelector('[data-ref="select-categories"]');
+    if (!selectCategories) return fragment;
 
-    // Lien « Tous les produits »
-    let btnTous = document.createElement("a");
-    btnTous.href = "/";
-    btnTous.setAttribute("data-link", "");
-    btnTous.setAttribute("role", "button");
+    // Option par défaut : toutes les catégories
     let nbTotalGeneral = data.totalGeneral ?? (Array.isArray(data.produits) ? data.produits.length : 0);
-    btnTous.textContent =
-      nbTotalGeneral > 0 ? `Tous les produits (${nbTotalGeneral})` : "Tous les produits";
+    let optTous = document.createElement("option");
+    optTous.value = "";
+    optTous.className = "bg-strong text-white";
+    optTous.textContent =
+      nbTotalGeneral > 0 ? `Toutes les catégories (${nbTotalGeneral})` : "Toutes les catégories";
     let estTousActif = data.categorieActive === null || data.categorieActive === undefined;
-    btnTous.className = estTousActif ? CLASSE_BOUTON_ACTIF : CLASSE_BOUTON_INACTIF;
-    btnTous.setAttribute("aria-pressed", estTousActif ? "true" : "false");
-    btnTous.addEventListener("click", () => {
-      if (typeof actions.surChangementCategorie === "function") {
-        actions.surChangementCategorie(null, null);
-      }
-    });
-    conteneurCategories.appendChild(btnTous);
+    if (estTousActif) {
+      optTous.selected = true;
+    }
+    selectCategories.appendChild(optTous);
 
-    // Liens pour chaque catégorie
+    // Options pour chaque catégorie
     let categories = Array.isArray(data.categories) ? data.categories : [];
     for (let cat of categories) {
-      let lien = document.createElement("a");
+      let opt = document.createElement("option");
       let slug = cat.slug || String(cat.id);
-      lien.href = `/categorie/${slug}`;
-      lien.setAttribute("data-link", "");
-      lien.setAttribute("role", "button");
+      opt.value = slug;
+      opt.dataset.id = String(cat.id);
+      opt.className = "bg-strong text-white";
       let nbCat = cat.nbProduits !== undefined ? ` (${cat.nbProduits})` : "";
-      lien.textContent = `${cat.nom}${nbCat}`;
+      opt.textContent = `${cat.nom}${nbCat}`;
       let estActif =
         (data.categorieActive !== null && Number(data.categorieActive) === Number(cat.id)) ||
         (data.slugActif && data.slugActif === slug);
-      lien.className = estActif ? CLASSE_BOUTON_ACTIF : CLASSE_BOUTON_INACTIF;
-      lien.setAttribute("aria-pressed", estActif ? "true" : "false");
-      lien.addEventListener("click", () => {
-        if (typeof actions.surChangementCategorie === "function") {
-          actions.surChangementCategorie(cat.id, slug);
-        }
-      });
-      conteneurCategories.appendChild(lien);
+      if (estActif) {
+        opt.selected = true;
+      }
+      selectCategories.appendChild(opt);
     }
+
+    selectCategories.addEventListener("change", () => {
+      let selectedOption = selectCategories.options[selectCategories.selectedIndex];
+      let slug = selectedOption.value || null;
+      let catId = selectedOption.dataset.id ? Number(selectedOption.dataset.id) : null;
+      if (typeof actions.surChangementCategorie === "function") {
+        actions.surChangementCategorie(catId, slug);
+      }
+    });
 
     return fragment;
   },

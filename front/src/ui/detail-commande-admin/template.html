@@ -1,13 +1,13 @@
 <div class="flex flex-col">
   <!-- Titre et lien retour -->
   <div class="mb-6">
-    <h2 class="text-3xl font-bold tracking-tight text-sand-600">
+    <h2 class="text-title-md sm:text-title-lg font-bold tracking-tight text-sand-600">
       Détail {{numero_commande}}
     </h2>
     <button
       type="button"
       data-action="retour-commandes"
-      class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+      class="mt-3 inline-flex items-center gap-1.5 text-body-sm font-medium text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
     >
       <span>&larr;</span>
       <span>Retour aux commandes</span>
@@ -15,33 +15,33 @@
   </div>
 
   <!-- Carte Infos (vert sauge) -->
-  <div class="rounded-2xl bg-brand p-6 text-white shadow-xs mb-6">
-    <div class="flex items-center justify-between">
-      <h3 class="text-2xl font-bold">Infos</h3>
+  <div class="rounded-2xl bg-brand p-4 sm:p-6 text-white shadow-xs mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h3 class="text-title-sm sm:text-title-md font-bold">Infos</h3>
       <span
         data-badge-statut
-        class="inline-flex items-center rounded-md bg-strong px-3 py-1 text-xs font-semibold text-white capitalize shadow-xs"
+        class="inline-flex items-center rounded-md bg-strong px-3 py-1 text-caption font-semibold text-white capitalize shadow-xs"
       >
         {{statut}}
       </span>
     </div>
 
     <!-- Coordonnées client -->
-    <div class="mt-4 flex flex-col gap-0.5 text-sm text-white/95">
+    <div class="mt-4 flex flex-col gap-0.5 text-caption sm:text-body-sm text-white/95">
       <span class="font-medium" data-client-nom>{{utilisateur_login}}</span>
-      <span class="text-xs text-white/80" data-client-email>{{utilisateur_email}}</span>
+      <span class="text-caption text-white/80" data-client-email>{{utilisateur_email}}</span>
     </div>
 
     <!-- Mise à jour du statut -->
     <div class="mt-5">
-      <label class="block text-sm font-medium text-white mb-2">
+      <label class="block text-caption sm:text-body-sm font-medium text-white mb-2">
         Statut de la commande
       </label>
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="relative flex-1 min-w-[220px]">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div class="relative flex-1 min-w-[200px]">
           <select
             data-select-statut
-            class="h-11 w-full appearance-none rounded-xl bg-strong px-4 pr-10 text-sm text-white shadow-xs cursor-pointer focus:ring-2 focus:ring-white/40 focus:outline-hidden"
+            class="h-11 w-full appearance-none rounded-xl bg-strong px-4 pr-10 text-body-sm text-white shadow-xs cursor-pointer focus:ring-2 focus:ring-white/40 focus:outline-hidden"
           >
             <option value="en cours" class="bg-strong text-white">En cours</option>
             <option value="disponible" class="bg-strong text-white">Disponible</option>
@@ -58,7 +58,7 @@
         <button
           type="button"
           data-action="enregistrer-statut"
-          class="h-11 rounded-xl bg-sand-600 px-6 text-sm font-medium text-white shadow-xs transition hover:bg-sand-700 cursor-pointer whitespace-nowrap focus:outline-hidden"
+          class="h-11 rounded-xl bg-sand-600 px-6 text-body-sm font-medium text-white shadow-xs transition hover:bg-sand-700 cursor-pointer whitespace-nowrap focus:outline-hidden"
         >
           Enregistrer le statut
         </button>
@@ -73,50 +73,50 @@
     </div>
 
     <!-- Colonne Récapitulatif -->
-    <div class="rounded-2xl bg-sand-500 p-6 text-white shadow-xs self-start">
-      <h3 class="text-xl font-bold mb-1">Récapitulatif</h3>
-      <p class="text-sm text-white/90 mb-4" data-compteur-articles>
+    <div class="rounded-2xl bg-sand-500 p-5 sm:p-6 text-white shadow-xs self-start">
+      <h3 class="text-body-lg sm:text-title-sm font-bold mb-1">Récapitulatif</h3>
+      <p class="text-caption sm:text-body-sm text-white/90 mb-4" data-compteur-articles>
         {{nb_articles_total}} produits
       </p>
 
       <div class="border-t border-white/40 my-4"></div>
 
       <div class="flex items-center justify-between">
-        <span class="text-base font-semibold">Total</span>
-        <span class="text-2xl font-bold">{{total_formate}}</span>
+        <span class="text-body-sm sm:text-body font-semibold">Total</span>
+        <span class="text-title-sm sm:text-title-md font-bold">{{total_formate}}</span>
       </div>
 
-      <p class="text-xs text-white/80 mt-6">
+      <p class="text-caption text-white/80 mt-5 sm:mt-6">
         Retrait au café
       </p>
     </div>
   </div>
 
   <!-- Journal d'audit des modifications administrateurs -->
-  <div class="mt-8 rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900" data-section-journal>
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+  <div class="mt-8 rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900" data-section-journal>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h3 class="text-caption sm:text-body-sm font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
         Journal des modifications administrateurs
       </h3>
-      <span class="text-xs text-neutral-400" data-journal-compteur>0 modification(s)</span>
+      <span class="text-caption text-neutral-400" data-journal-compteur>0 modification(s)</span>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-neutral-200 dark:border-zinc-800" data-conteneur-journal>
-      <table class="w-full text-left text-xs">
-        <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 uppercase tracking-wider dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-neutral-400">
+    <div class="w-full max-w-full rounded-xl md:border md:border-neutral-200 md:dark:border-zinc-800" data-conteneur-journal>
+      <table class="w-full text-left text-caption">
+        <thead class="hidden md:table-header-group border-b border-neutral-200 bg-neutral-50 text-neutral-500 uppercase tracking-wider dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-neutral-400">
           <tr>
-            <th scope="col" class="px-4 py-2.5">Date &amp; heure</th>
-            <th scope="col" class="px-4 py-2.5">Administrateur</th>
-            <th scope="col" class="px-4 py-2.5">Changement d'état</th>
-            <th scope="col" class="px-4 py-2.5">Commentaire / Motif</th>
+            <th scope="col" class="px-3 sm:px-4 py-2.5">Date &amp; heure</th>
+            <th scope="col" class="px-3 sm:px-4 py-2.5">Administrateur</th>
+            <th scope="col" class="px-3 sm:px-4 py-2.5">Changement d'état</th>
+            <th scope="col" class="px-3 sm:px-4 py-2.5">Commentaire / Motif</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-neutral-200 dark:divide-zinc-800" data-corps-journal>
+        <tbody class="block md:table-row-group space-y-3 md:space-y-0 md:divide-y md:divide-neutral-200 md:dark:divide-zinc-800" data-corps-journal>
         </tbody>
       </table>
     </div>
 
-    <p data-journal-vide class="hidden py-4 text-center text-xs text-neutral-500 dark:text-neutral-400 italic">
+    <p data-journal-vide class="hidden py-4 text-center text-caption text-neutral-500 dark:text-neutral-400 italic">
       Aucune modification administrateur enregistrée pour le moment.
     </p>
   </div>

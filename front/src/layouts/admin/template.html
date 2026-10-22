@@ -1,10 +1,9 @@
-<div class="grid grid-cols-[auto_1fr] min-h-screen">
-  <aside class="sticky top-0 h-screen shrink-0">
+<div class="flex flex-col min-h-screen md:grid md:grid-cols-[auto_1fr] w-full max-w-full overflow-x-hidden">
+  <aside class="w-full shrink-0 md:sticky md:top-0 md:h-screen md:w-64">
     <slot name="header"></slot>
   </aside>
-  <main class="min-w-0 overflow-y-auto">
+  <main class="min-w-0 flex-1 w-full max-w-full overflow-y-auto">
     <!-- Le slot sans nom reçoit la page affichée (voir lib/router.js). -->
     <slot></slot>
   </main>
 </div>
-

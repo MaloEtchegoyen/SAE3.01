@@ -1,4 +1,4 @@
-import { AuthData } from "../../data/auth.js";
+﻿import { AuthData } from "../../data/auth.js";
 import { CartData } from "../../data/cart.js";
 import { navigate } from "../../lib/router.js";
 import { escapeHtml, htmlToFragment } from "../../lib/utils.js";
@@ -112,9 +112,9 @@ V.createPageFragment = function () {
             </svg>
           </div>
           <div>
-            <h2 class="text-xl font-bold text-feuillette-charbon">Mon compte client</h2>
-            <p class="text-sm text-feuillette-charbon/70 font-medium">${escapeHtml(M.utilisateur.utilisateur)}</p>
-            <span class="mt-1 inline-flex items-center rounded-md bg-feuillette-creme/50 px-2 py-0.5 text-xs font-semibold text-feuillette-charbon">
+            <h2 class="text-title-sm font-bold text-feuillette-charbon">Mon compte client</h2>
+            <p class="text-body-sm text-feuillette-charbon/70 font-medium">${escapeHtml(M.utilisateur.utilisateur)}</p>
+            <span class="mt-1 inline-flex items-center rounded-md bg-feuillette-creme/50 px-2 py-0.5 text-caption font-semibold text-feuillette-charbon">
               ${isAdmin ? "Administrateur" : "Client"}
             </span>
           </div>
@@ -124,7 +124,7 @@ V.createPageFragment = function () {
           <a
             href="/panier"
             data-link
-            class="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-6 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            class="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-6 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m15 11-1 9" />
@@ -143,7 +143,7 @@ V.createPageFragment = function () {
               ? `<a
                   href="/admin"
                   data-link
-                  class="flex h-11 w-full items-center justify-center rounded-lg border border-brand bg-transparent px-6 text-sm font-medium text-brand transition-colors hover:bg-brand/5"
+                  class="flex h-11 w-full items-center justify-center rounded-lg border border-brand bg-transparent px-6 text-body-sm font-medium text-brand transition-colors hover:bg-brand/5"
                 >
                   Panneau d'administration
                 </a>`
@@ -153,7 +153,7 @@ V.createPageFragment = function () {
           <a
             href="/"
             data-link
-            class="flex h-11 w-full items-center justify-center rounded-lg border border-feuillette-creme bg-white px-6 text-sm font-medium text-feuillette-charbon transition-colors hover:bg-feuillette-blanc"
+            class="flex h-11 w-full items-center justify-center rounded-lg border border-feuillette-creme bg-white px-6 text-body-sm font-medium text-feuillette-charbon transition-colors hover:bg-feuillette-blanc"
           >
             Parcourir le catalogue
           </a>
@@ -161,7 +161,7 @@ V.createPageFragment = function () {
           <button
             type="button"
             data-action="se-deconnecter"
-            class="mt-2 flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-red-50/50 text-sm font-medium text-red-700 transition-colors hover:bg-red-100/60 cursor-pointer"
+            class="mt-2 flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-red-50/50 text-body-sm font-medium text-red-700 transition-colors hover:bg-red-100/60 cursor-pointer"
           >
             Se déconnecter
           </button>

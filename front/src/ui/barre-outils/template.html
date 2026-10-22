@@ -1,10 +1,25 @@
-<nav aria-label="Fil d'Ariane" class="mb-4 flex items-center gap-2 text-sm text-brand/70">
+﻿<nav aria-label="Fil d'Ariane" class="mb-4 flex items-center gap-2 text-body-sm text-brand/70">
   <a href="/" data-link class="transition-colors hover:text-brand">Accueil</a>
   <span aria-hidden="true" class="text-brand/40">&rsaquo;</span>
   <span data-ref="ariane-actif" class="font-medium text-brand">{{arianeActif}}</span>
 </nav>
 
-<nav aria-label="Filtres par catégorie" class="mb-8 flex flex-col justify-between gap-4">
-  <div data-ref="categories" class="flex flex-wrap items-center gap-2"></div>
-  <span data-ref="total" class="text-sm text-brand">{{total}}</span>
+<nav aria-label="Filtres par catégorie" class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="flex items-center gap-3">
+    <label for="filtre-categorie" class="text-body-sm font-medium text-brand">Catégorie :</label>
+    <div class="relative">
+      <select
+        id="filtre-categorie"
+        data-ref="select-categories"
+        aria-label="Filtrer par catégorie"
+        class="h-10 appearance-none rounded-xl bg-input text-default border border-border px-4 pr-10 text-body-sm font-medium shadow-xs transition-colors cursor-pointer hover:bg-input-hover focus:outline-none focus:ring-2 focus:ring-brand/40"
+      ></select>
+      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-default/70">
+        <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20">
+          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+        </svg>
+      </span>
+    </div>
+  </div>
+  <span data-ref="total" class="text-body-sm text-brand">{{total}}</span>
 </nav>

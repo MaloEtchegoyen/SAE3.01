@@ -1,4 +1,4 @@
-<div data-ref="galerie-conteneur" class="max-h-125 flex flex-col gap-4">
+﻿<div data-ref="galerie-conteneur" class="flex flex-col gap-3 sm:gap-4">
   <!-- Grande image d'affichage -->
   <div class="relative overflow-hidden rounded-3xl border border-border bg-subtle aspect-4/3 w-full shadow-xs">
     <!-- Image principale ou arrière-plan thématique -->
@@ -16,11 +16,11 @@
     ></div>
 
     <!-- Badge d'état de stock -->
-    <div class="absolute top-4 left-4 z-10">
+    <div class="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
       <span
         data-ref="badge-stock"
         data-stock="{{code_stock}}"
-        class="badge-stock inline-flex items-center rounded-sm border border-border px-3.5 py-2 text-xs font-semibold tracking-wide shadow-xs"
+        class="badge-stock inline-flex items-center rounded-md border border-border px-3 py-1.5 text-caption font-semibold tracking-wide shadow-xs"
       >
         {{etat_stock}}
       </span>
@@ -32,7 +32,7 @@
         type="button"
         data-action="precedent"
         aria-label="Image précédente"
-        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105"
+        class="pointer-events-auto flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105 cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
@@ -43,7 +43,7 @@
         type="button"
         data-action="suivant"
         aria-label="Image suivante"
-        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105"
+        class="pointer-events-auto flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/90 text-content-primary shadow-md backdrop-blur-xs transition hover:bg-white hover:scale-105 cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"></polyline>
@@ -57,4 +57,3 @@
     <slot name="vignettes"></slot>
   </div>
 </div>
-

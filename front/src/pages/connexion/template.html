@@ -1,4 +1,6 @@
-<section class="min-h-[calc(100vh-68px)] flex justify-center items-center bg-desktop bg-no-repeat bg-cover">
-  <slot name="message"></slot>
-  <slot name="formulaire"></slot>
+<section class="min-h-[calc(100vh-68px)] flex justify-center items-center bg-desktop bg-no-repeat bg-cover p-4 sm:p-6 overflow-y-auto">
+  <div class="w-full max-w-md">
+    <slot name="message"></slot>
+    <slot name="formulaire"></slot>
+  </div>
 </section>
