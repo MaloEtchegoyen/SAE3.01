@@ -55,8 +55,19 @@ let OrderData = {
    *   articles_apercu: string
    * }>>}
    */
-  async listerMesCommandes(limite = 5) {
-    let reponse = await getRequest(`orders?limite=${encodeURIComponent(limite)}`);
+  async listerMesCommandes(options = {}) {
+    let params = new URLSearchParams();
+    if (typeof options === "number") {
+      params.set("parPage", String(options));
+    } else if (options && typeof options === "object") {
+      if (options.statut) params.set("statut", options.statut);
+      if (options.periode) params.set("periode", options.periode);
+      if (options.page) params.set("page", String(options.page));
+      if (options.parPage) params.set("parPage", String(options.parPage));
+      if (options.tri) params.set("tri", options.tri);
+    }
+    let query = params.toString();
+    let reponse = await getRequest(query ? `orders?${query}` : "orders");
     return reponse;
   },
   async obtenirCommande(numeroCommande) {

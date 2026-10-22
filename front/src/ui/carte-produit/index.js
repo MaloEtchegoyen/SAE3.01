@@ -61,13 +61,17 @@ function resoudreUrlImage(sourceImage) {
     return nettoyee;
   }
 
-  if (nettoyee.startsWith("/assets/") || nettoyee.includes("assets/")) {
-    return nettoyee;
+  let base = import.meta.env.BASE_URL || "/";
+  let racine = base.endsWith("/") ? base : `${base}/`;
+
+  if (nettoyee.includes("api/products/image")) {
+    if (nettoyee.startsWith("/")) {
+      return nettoyee;
+    }
+    return `${racine}${nettoyee.replace(/^\/+/, "")}`;
   }
 
   let nomFichier = nettoyee.includes("/") ? nettoyee.split("/").pop() : nettoyee;
-  let base = import.meta.env.BASE_URL || "/";
-  let racine = base.endsWith("/") ? base : `${base}/`;
   return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
 }
 
@@ -148,5 +152,4 @@ let CarteProduitView = {
   },
 };
 
-export { CarteProduitView, calculerEtatStock, resoudreUrlImage };
-
+export { CarteProduitView, calculerEtatStock, resoudreUrlImage, placeholderImg };

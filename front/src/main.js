@@ -31,6 +31,7 @@ router.addRoute("/validation-commande", ValidationCommandePage);
 router.addRoute("/confirmation-commande", ConfirmationCommandePage);
 router.addRoute("/confirmation-commande/:numero", ConfirmationCommandePage);
 router.addRoute("/compte", ComptePage);
+router.addRoute("/commandes", ComptePage);
 router.addRoute("/connexion", ConnexionPage);
 router.addRoute("/connexion-admin", ConnexionAdminPage, { useLayout: false });
 router.addRoute("/admin", AdminPage);

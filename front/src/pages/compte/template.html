@@ -46,7 +46,6 @@
     <main class="min-w-0">
       <!-- Section Profil (Mes informations) -->
       <section data-ref="section-profil" class="space-y-10">
-
         <div>
           <h2 class="text-2xl font-bold tracking-tight text-neutral-900 mb-4">
             Modifier vos informations personnelles :
@@ -115,31 +114,171 @@
         </div>
       </section>
 
-      <!-- Section Commandes (Mes commandes) -->
-      <section data-ref="section-commandes" class="max-w-2xl space-y-4 hidden">
-          <h2 class="text-2xl font-bold tracking-tight text-neutral-900">
-            Mes commandes :
-          </h2>
+      <!-- Section Commandes (Historique des commandes - style thème Café Feuillette) -->
+      <section data-ref="section-commandes" class="space-y-6 hidden">
+        <!-- Filtres par Statut et Période -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Filtre Statut -->
+          <div>
+            <label for="filtre-statut" class="block text-body-sm font-bold text-neutral-900 mb-1.5">
+              Statut
+            </label>
+            <div class="relative">
+              <select
+                id="filtre-statut"
+                data-ref="filtre-statut"
+                class="w-full appearance-none rounded-xl bg-accent px-4 py-3 pr-10 text-body-sm font-medium text-white border border-white/20 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-white/40 cursor-pointer"
+              >
+                <option value="" class="bg-accent text-white">Tous les statuts</option>
+                <option value="en cours" class="bg-accent text-white">En cours</option>
+                <option value="disponible" class="bg-accent text-white">Disponible</option>
+                <option value="retirée" class="bg-accent text-white">Retirée</option>
+                <option value="annulée" class="bg-accent text-white">Annulée</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white">
+                <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtre Période -->
+          <div>
+            <label for="filtre-periode" class="block text-body-sm font-bold text-neutral-900 mb-1.5">
+              Période
+            </label>
+            <div class="relative">
+              <select
+                id="filtre-periode"
+                data-ref="filtre-periode"
+                class="w-full appearance-none rounded-xl bg-accent px-4 py-3 pr-10 text-body-sm font-medium text-white border border-white/20 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-white/40 cursor-pointer"
+              >
+                <option value="" class="bg-accent text-white">Toutes les dates</option>
+                <option value="30j" class="bg-accent text-white">30 derniers jours</option>
+                <option value="3m" class="bg-accent text-white">3 derniers mois</option>
+                <option value="6m" class="bg-accent text-white">6 derniers mois</option>
+                <option value="annee" class="bg-accent text-white">Année en cours</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white">
+                <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicateur de chargement -->
+        <div data-ref="commandes-chargement" class="rounded-2xl bg-accent/20 p-8 text-center text-neutral-700 hidden">
+          <p class="text-body-sm font-medium">Chargement de vos commandes...</p>
+        </div>
 
         <!-- Bloc vide si aucune commande -->
         <div data-ref="commandes-vide" class="rounded-2xl bg-accent p-8 text-center text-white shadow-xs hidden">
-          <h3 class="text-title-sm font-bold">Aucune commande récente</h3>
-          <p class="mt-2 text-body-sm text-white/90">
+          <h3 data-ref="titre-commandes-vide" class="text-title-sm font-bold text-white">Aucune commande trouvée</h3>
+          <p data-ref="message-commandes-vide" class="mt-2 text-body-sm text-white/90">
             Vous n'avez pas encore passé de commande chez Café Feuillette.
           </p>
           <div class="mt-6">
             <a
               href="/"
               data-link
-              class="inline-flex rounded-xl bg-input px-6 py-3 text-body-sm font-medium text-white transition hover:bg-input-hover"
+              class="inline-flex rounded-xl bg-input hover:bg-input-hover px-6 py-3 text-body-sm font-medium text-white shadow-xs transition"
             >
               Découvrir le catalogue
             </a>
           </div>
         </div>
 
-        <!-- Liste des cartes de commandes -->
-        <div data-ref="liste-commandes" class="space-y-3"></div>
+        <!-- Conteneur du tableau des commandes -->
+        <div data-ref="bloc-tableau-commandes" class="space-y-4">
+          <div class="rounded-2xl border border-white/20 overflow-hidden bg-brand shadow-xs">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-white">
+                <thead>
+                  <tr class="bg-accent text-body-sm font-semibold text-white border-b border-white/20">
+                    <th scope="col" class="py-3 px-4 font-semibold">Commande</th>
+                    <th scope="col" class="py-3 px-4 font-semibold">
+                      <button
+                        type="button"
+                        data-action="tri-date"
+                        class="inline-flex items-center gap-1 font-semibold text-white hover:text-white/80 cursor-pointer"
+                      >
+                        <span>Date</span>
+                        <span data-ref="indicateur-tri" class="text-caption text-white/80">⇅</span>
+                      </button>
+                    </th>
+                    <th scope="col" class="py-3 px-4 font-semibold">Statut</th>
+                    <th scope="col" class="py-3 px-4 font-semibold">Total</th>
+                    <th scope="col" class="py-3 px-4 font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody data-ref="corps-tableau-commandes" class="divide-y divide-white/20"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Barre de pagination style maquette -->
+          <div data-ref="zone-pagination" class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <p data-ref="info-pagination" class="text-body-sm text-neutral-700 font-medium"></p>
+            <div class="inline-flex items-center gap-2">
+              <button
+                type="button"
+                data-action="page-precedente"
+                class="rounded-xl bg-accent hover:bg-input px-3.5 py-1.5 text-body-sm font-medium text-white shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Précédent
+              </button>
+              <div data-ref="pagination-boutons" class="inline-flex items-center gap-1.5"></div>
+              <button
+                type="button"
+                data-action="page-suivante"
+                class="rounded-xl bg-accent hover:bg-input px-3.5 py-1.5 text-body-sm font-medium text-white shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Suivant
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Encadré Détail de la commande sélectionnée -->
+        <article data-ref="carte-detail-commande" class="rounded-2xl bg-accent p-6 sm:p-8 text-white shadow-xs hidden">
+          <!-- En-tête de la commande -->
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+              <h3 class="text-title-sm font-bold text-white">
+                Détail · <span data-ref="detail-numero-commande"></span>
+              </h3>
+              <p class="text-caption text-white/80 mt-1">
+                <span data-ref="detail-date-commande"></span> - retrait à la boulangerie
+              </p>
+            </div>
+            <div>
+              <span
+                data-ref="detail-badge-statut"
+                class="inline-flex items-center rounded-xl bg-input px-3 py-1 text-caption font-semibold text-white capitalize shadow-xs"
+              ></span>
+            </div>
+          </div>
+
+          <!-- Liste des articles -->
+          <div data-ref="detail-liste-articles" class="space-y-3"></div>
+
+          <!-- Pied du détail -->
+          <div class="mt-6 pt-6 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-body font-bold text-white">
+              Total : <span data-ref="detail-total-commande"></span> <span class="font-normal text-white/80">· sans code promo</span>
+            </p>
+            <button
+              type="button"
+              data-action="commander-a-nouveau"
+              class="w-full sm:w-auto rounded-xl bg-input hover:bg-input-hover px-5 py-2.5 text-body-sm font-medium text-white shadow-xs transition cursor-pointer"
+            >
+              Commander à nouveau
+            </button>
+          </div>
+        </article>
       </section>
     </main>
   </div>

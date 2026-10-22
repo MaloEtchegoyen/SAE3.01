@@ -1,15 +1,18 @@
 import { AuthData } from "../../data/auth.js";
 import { UserData } from "../../data/user.js";
 import { OrderData } from "../../data/order.js";
+import { CartData } from "../../data/cart.js";
 import { navigate } from "../../lib/router.js";
 import { htmlToFragment } from "../../lib/utils.js";
 import { formaterPrix } from "../../lib/format.js";
 import { MessageView } from "../../ui/message/index.js";
+import { resoudreUrlImage } from "../../ui/carte-produit/index.js";
 import template from "./template.html?raw";
-import carteCommandeTemplate from "./carte-commande.html?raw";
+import ligneTableauTemplate from "./ligne-tableau-commande.html?raw";
+import ligneDetailArticleTemplate from "./ligne-detail-article.html?raw";
 
 /**
- * Modèle local de la page Compte (Espace personnel client).
+ * Modèle local de la page Compte (Espace personnel client & Historique SUI-c).
  * Strictement découplé du DOM (MVC).
  */
 let M = {
@@ -21,6 +24,19 @@ let M = {
     role: "user",
   },
   commandes: [],
+  commandeSelectionneeId: null,
+  tri: "date_desc",
+  pagination: {
+    page: 1,
+    pagesTotal: 1,
+    total: 0,
+    parPage: 5,
+  },
+  filtres: {
+    statut: "",
+    periode: "",
+  },
+  chargementCommandes: false,
   chargement: true,
   ongletActif: "profil", // 'profil' | 'commandes'
   message: null, // { type: 'succes' | 'erreur' | 'info', texte: string } | null
@@ -28,6 +44,54 @@ let M = {
 };
 
 let C = {};
+
+/**
+ * Charge les commandes avec filtres, tri et pagination.
+ */
+C.chargerCommandes = async function () {
+  M.chargementCommandes = true;
+  try {
+    let reponse = await OrderData.listerMesCommandes({
+      statut: M.filtres.statut,
+      periode: M.filtres.periode,
+      page: M.pagination.page,
+      parPage: M.pagination.parPage,
+      tri: M.tri,
+    });
+
+    if (reponse && Array.isArray(reponse.items)) {
+      M.commandes = reponse.items;
+      M.pagination.page = reponse.page || 1;
+      M.pagination.pagesTotal = reponse.pagesTotal || 1;
+      M.pagination.total = reponse.total || 0;
+      M.pagination.parPage = reponse.parPage || 5;
+    } else if (Array.isArray(reponse)) {
+      M.commandes = reponse;
+      M.pagination.total = reponse.length;
+      M.pagination.pagesTotal = 1;
+      M.pagination.page = 1;
+    } else {
+      M.commandes = [];
+      M.pagination.total = 0;
+      M.pagination.pagesTotal = 1;
+    }
+
+    // Ne pas sélectionner par défaut pour n'afficher le détail qu'au clic
+    let commandeExistante = M.commandes.find((c) => c.id === M.commandeSelectionneeId);
+    if (!commandeExistante) {
+      M.commandeSelectionneeId = null;
+    }
+  } catch (erreur) {
+    M.commandes = [];
+    M.commandeSelectionneeId = null;
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors du chargement des commandes.",
+    };
+  } finally {
+    M.chargementCommandes = false;
+  }
+};
 
 /**
  * Charge les données initiales du profil et des commandes.
@@ -60,13 +124,8 @@ C.charger = async function () {
       };
     }
 
-    // Charger les commandes récentes
-    try {
-      let commandes = await OrderData.listerMesCommandes(10);
-      M.commandes = Array.isArray(commandes) ? commandes : [];
-    } catch {
-      M.commandes = [];
-    }
+    // Charger les commandes initiales
+    await C.chargerCommandes();
   } catch (erreur) {
     M.message = {
       type: "erreur",
@@ -85,6 +144,111 @@ C.charger = async function () {
 C.changerOnglet = function (onglet) {
   M.ongletActif = onglet;
   M.message = null;
+  V.rafraichir();
+};
+
+/**
+ * Changement du filtre de statut.
+ *
+ * @param {string} nouveauStatut
+ */
+C.changerFiltreStatut = async function (nouveauStatut) {
+  M.filtres.statut = nouveauStatut;
+  M.pagination.page = 1;
+  await C.chargerCommandes();
+  V.rafraichir();
+};
+
+/**
+ * Changement du filtre de période.
+ *
+ * @param {string} nouvellePeriode
+ */
+C.changerFiltrePeriode = async function (nouvellePeriode) {
+  M.filtres.periode = nouvellePeriode;
+  M.pagination.page = 1;
+  await C.chargerCommandes();
+  V.rafraichir();
+};
+
+/**
+ * Alterne le tri par date.
+ */
+C.basculerTriDate = async function () {
+  M.tri = M.tri === "date_desc" ? "date_asc" : "date_desc";
+  M.pagination.page = 1;
+  await C.chargerCommandes();
+  V.rafraichir();
+};
+
+/**
+ * Changement de page de commandes.
+ *
+ * @param {number} nouvellePage
+ */
+C.changerPage = async function (nouvellePage) {
+  if (nouvellePage < 1 || nouvellePage > M.pagination.pagesTotal) return;
+  M.pagination.page = nouvellePage;
+  await C.chargerCommandes();
+  V.rafraichir();
+};
+
+/**
+ * Sélectionne une commande pour afficher son détail en bas (ou la désélectionne si déjà active).
+ *
+ * @param {number} commandeId
+ */
+C.selectionnerCommande = function (commandeId) {
+  if (M.commandeSelectionneeId === commandeId) {
+    M.commandeSelectionneeId = null;
+  } else {
+    M.commandeSelectionneeId = commandeId;
+  }
+  V.rafraichir();
+
+  if (M.commandeSelectionneeId !== null) {
+    // Scroll doux vers l'encadré de détail
+    let elDetail = document.querySelector('[data-ref="carte-detail-commande"]');
+    if (elDetail) {
+      elDetail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+};
+
+/**
+ * Remet les articles d'une commande dans le panier courant.
+ *
+ * @param {object} commande
+ */
+C.commanderANouveau = function (commande) {
+  if (!commande || !Array.isArray(commande.lignes) || commande.lignes.length === 0) {
+    return;
+  }
+
+  for (let i = 0, nb = commande.lignes.length; i < nb; i++) {
+    let ligne = commande.lignes[i];
+    CartData.ajouterArticle({
+      produit: {
+        id: ligne.product_id,
+        nom: ligne.nom_produit,
+        prix: ligne.prix_unitaire,
+        image_url: ligne.image_url,
+      },
+      quantite: ligne.quantite,
+      variante: ligne.variant_id
+        ? {
+            id: ligne.variant_id,
+            nom: ligne.nom_variante,
+            prix: ligne.prix_unitaire,
+          }
+        : null,
+    });
+  }
+
+  M.message = {
+    type: "succes",
+    texte: `Les articles de la commande ${commande.numero_commande} ont été réajoutés à votre panier.`,
+  };
   V.rafraichir();
 };
 
@@ -109,7 +273,6 @@ C.enregistrerModifications = async function (donnees) {
     return;
   }
 
-  // Si l'utilisateur tente de changer de mot de passe (DoD spécifique)
   if (nouveauMdp) {
     if (!ancienMdp) {
       M.message = {
@@ -134,11 +297,9 @@ C.enregistrerModifications = async function (donnees) {
   V.rafraichir();
 
   try {
-    // 1. Mettre à jour l'email (nom transmis identique à l'email ou login pour compatibilité API)
     let reponseProfil = await UserData.modifierProfil({ nom: email, email });
     M.profil.email = reponseProfil.profil?.email || email;
 
-    // 2. Si un nouveau mot de passe a été fourni, le mettre à jour
     if (nouveauMdp) {
       await UserData.modifierMotDePasse({
         ancienMotDePasse: ancienMdp,
@@ -183,10 +344,18 @@ C.deconnexion = async function () {
 /**
  * Initialisation de la page Compte.
  *
+ * @param {object} [params={}]
  * @returns {Promise<DocumentFragment>}
  */
-C.init = async function () {
+C.init = async function (params = {}) {
   M.message = null;
+
+  let search = new URLSearchParams(window.location.search);
+  let tabParam = search.get("tab");
+  if (window.location.pathname.endsWith("/commandes") || tabParam === "commandes") {
+    M.ongletActif = "commandes";
+  }
+
   await C.charger();
 
   if (!M.utilisateur || !M.utilisateur.connecte) {
@@ -217,64 +386,44 @@ V.rafraichir = function () {
 };
 
 /**
- * Formate une date au format français lisible.
+ * Formate une date au format court JJ/MM/AAAA pour le tableau.
  *
  * @param {string} dateStr
  * @returns {string}
  */
-function formaterDateLocale(dateStr) {
+function formaterDateTableau(dateStr) {
   if (!dateStr) return "";
   try {
     let d = new Date(dateStr.replace(" ", "T"));
     if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    let jour = String(d.getDate()).padStart(2, "0");
+    let mois = String(d.getMonth() + 1).padStart(2, "0");
+    let annee = d.getFullYear();
+    return `${jour}/${mois}/${annee}`;
   } catch {
     return dateStr;
   }
 }
 
 /**
- * Retourne le style et libellé d'un badge de statut de commande.
+ * Formate une date au format étendu (ex: 10 octobre 2026) pour l'encadré détail.
  *
- * @param {string} statut
- * @returns {{ classes: string, libelle: string }}
+ * @param {string} dateStr
+ * @returns {string}
  */
-function obtenirBadgeStatut(statut) {
-  let s = (statut || "").toLowerCase();
-  if (s === "en cours") {
-    return {
-      classes: "bg-amber-50 text-amber-800 border-amber-200",
-      libelle: "En cours",
-    };
+function formaterDateDetail(dateStr) {
+  if (!dateStr) return "";
+  try {
+    let d = new Date(dateStr.replace(" ", "T"));
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
   }
-  if (s === "disponible") {
-    return {
-      classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
-      libelle: "Disponible",
-    };
-  }
-  if (s === "retirée" || s === "retiree") {
-    return {
-      classes: "bg-slate-100 text-slate-700 border-slate-200",
-      libelle: "Retirée",
-    };
-  }
-  if (s === "annulée" || s === "annulee") {
-    return {
-      classes: "bg-red-50 text-red-700 border-red-200",
-      libelle: "Annulée",
-    };
-  }
-  return {
-    classes: "bg-stone-100 text-stone-700 border-stone-200",
-    libelle: statut || "Inconnu",
-  };
 }
 
 /**
@@ -285,7 +434,7 @@ function obtenirBadgeStatut(statut) {
 V.createPageFragment = function () {
   let pageFragment = htmlToFragment(template);
 
-  // Nom dynamique / identifiant dans le titre d'accueil
+  // Nom dynamique / email dans le titre d'accueil
   let nomEl = pageFragment.querySelector('[data-ref="nom-client"]');
   if (nomEl) {
     nomEl.textContent = M.profil.email || M.profil.login || "";
@@ -331,7 +480,7 @@ V.createPageFragment = function () {
     }
   }
 
-  // Récupération des sections de contenu
+  // Sections
   let sectionProfil = pageFragment.querySelector('[data-ref="section-profil"]');
   let sectionCommandes = pageFragment.querySelector('[data-ref="section-commandes"]');
 
@@ -339,13 +488,6 @@ V.createPageFragment = function () {
     sectionProfil?.classList.remove("hidden");
     sectionCommandes?.classList.add("hidden");
 
-    // Affichage de l'email
-    let infoEmail = pageFragment.querySelector('[data-ref="info-email"]');
-    if (infoEmail) {
-      infoEmail.textContent = M.profil.email || M.profil.login || "";
-    }
-
-    // Remplissage du champ email
     let champEmail = pageFragment.querySelector('[data-ref="champ-email"]');
     if (champEmail) {
       champEmail.value = M.profil.email || "";
@@ -356,7 +498,7 @@ V.createPageFragment = function () {
       btnSoumettre.disabled = M.enCoursDeTraitement;
       btnSoumettre.textContent = M.enCoursDeTraitement
         ? "Enregistrement..."
-        : "Enregistrer les modifications";
+        : "Modifier";
     }
 
     let form = pageFragment.querySelector('[data-form="modifier-profil"]');
@@ -375,51 +517,224 @@ V.createPageFragment = function () {
     sectionProfil?.classList.add("hidden");
     sectionCommandes?.classList.remove("hidden");
 
-    let blocVide = pageFragment.querySelector('[data-ref="commandes-vide"]');
-    let listeCommandes = pageFragment.querySelector('[data-ref="liste-commandes"]');
+    // Sélecteur de statut
+    let selectStatut = pageFragment.querySelector('[data-ref="filtre-statut"]');
+    if (selectStatut) {
+      selectStatut.value = M.filtres.statut;
+      selectStatut.addEventListener("change", (e) => {
+        C.changerFiltreStatut(e.target.value);
+      });
+    }
 
-    if (M.commandes.length === 0) {
+    // Sélecteur de période
+    let selectPeriode = pageFragment.querySelector('[data-ref="filtre-periode"]');
+    if (selectPeriode) {
+      selectPeriode.value = M.filtres.periode;
+      selectPeriode.addEventListener("change", (e) => {
+        C.changerFiltrePeriode(e.target.value);
+      });
+    }
+
+    // Bouton de tri de la colonne Date
+    let btnTriDate = pageFragment.querySelector('[data-action="tri-date"]');
+    let indicateurTri = pageFragment.querySelector('[data-ref="indicateur-tri"]');
+    if (btnTriDate) {
+      if (indicateurTri) {
+        indicateurTri.textContent = M.tri === "date_asc" ? "▲" : "▼";
+      }
+      btnTriDate.addEventListener("click", () => {
+        C.basculerTriDate();
+      });
+    }
+
+    // Chargement
+    let blocChargement = pageFragment.querySelector('[data-ref="commandes-chargement"]');
+    if (blocChargement) {
+      if (M.chargementCommandes) {
+        blocChargement.classList.remove("hidden");
+      } else {
+        blocChargement.classList.add("hidden");
+      }
+    }
+
+    let blocVide = pageFragment.querySelector('[data-ref="commandes-vide"]');
+    let blocTableau = pageFragment.querySelector('[data-ref="bloc-tableau-commandes"]');
+    let corpsTableau = pageFragment.querySelector('[data-ref="corps-tableau-commandes"]');
+    let carteDetail = pageFragment.querySelector('[data-ref="carte-detail-commande"]');
+
+    if (!M.chargementCommandes && M.commandes.length === 0) {
       blocVide?.classList.remove("hidden");
-      listeCommandes?.classList.add("hidden");
+      blocTableau?.classList.add("hidden");
+      carteDetail?.classList.add("hidden");
     } else {
       blocVide?.classList.add("hidden");
-      listeCommandes?.classList.remove("hidden");
+      blocTableau?.classList.remove("hidden");
 
-      for (let i = 0, nb = M.commandes.length; i < nb; i++) {
-        let cmd = M.commandes[i];
-        let carteFrag = htmlToFragment(carteCommandeTemplate);
+      // Remplissage des lignes du tableau
+      if (corpsTableau) {
+        corpsTableau.replaceChildren();
 
-        let numEl = carteFrag.querySelector('[data-ref="numero-commande"]');
-        if (numEl) numEl.textContent = cmd.numero_commande;
+        for (let i = 0, nb = M.commandes.length; i < nb; i++) {
+          let cmd = M.commandes[i];
+          let ligneFrag = htmlToFragment(ligneTableauTemplate);
+          let tr = ligneFrag.querySelector("tr");
 
-        let badgeEl = carteFrag.querySelector('[data-ref="badge-statut"]');
-        if (badgeEl) {
-          let badgeInfo = obtenirBadgeStatut(cmd.statut);
-          badgeEl.className = `inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-semibold ${badgeInfo.classes}`;
-          badgeEl.textContent = badgeInfo.libelle;
+          let estSelectionnee = cmd.id === M.commandeSelectionneeId;
+          if (estSelectionnee && tr) {
+            tr.classList.add("bg-white/20");
+          }
+
+          let colNumero = ligneFrag.querySelector('[data-ref="col-numero"]');
+          if (colNumero) colNumero.textContent = cmd.numero_commande;
+
+          let colDate = ligneFrag.querySelector('[data-ref="col-date"]');
+          if (colDate) colDate.textContent = formaterDateTableau(cmd.date_commande);
+
+          let colStatut = ligneFrag.querySelector('[data-ref="col-statut"]');
+          if (colStatut) colStatut.textContent = cmd.statut;
+
+          let colTotal = ligneFrag.querySelector('[data-ref="col-total"]');
+          if (colTotal) colTotal.textContent = formaterPrix(cmd.total);
+
+          let btnVoirDetail = ligneFrag.querySelector('[data-action="voir-detail"]');
+          if (btnVoirDetail) {
+            btnVoirDetail.addEventListener("click", () => {
+              C.selectionnerCommande(cmd.id);
+            });
+          }
+
+          corpsTableau.appendChild(ligneFrag);
         }
+      }
 
-        let dateEl = carteFrag.querySelector('[data-ref="date-commande"]');
-        if (dateEl) dateEl.textContent = formaterDateLocale(cmd.date_commande);
+      // Pagination
+      let infoPagination = pageFragment.querySelector('[data-ref="info-pagination"]');
+      if (infoPagination) {
+        let debut = (M.pagination.page - 1) * M.pagination.parPage + 1;
+        let fin = Math.min(M.pagination.page * M.pagination.parPage, M.pagination.total);
+        infoPagination.textContent = `${debut}-${fin} sur ${M.pagination.total} commandes`;
+      }
 
-        let apercuEl = carteFrag.querySelector('[data-ref="articles-apercu"]');
-        if (apercuEl) {
-          if (cmd.articles_apercu) {
-            apercuEl.textContent = cmd.articles_apercu;
+      let btnPrec = pageFragment.querySelector('[data-action="page-precedente"]');
+      if (btnPrec) {
+        btnPrec.disabled = M.pagination.page <= 1;
+        btnPrec.addEventListener("click", () => {
+          C.changerPage(M.pagination.page - 1);
+        });
+      }
+
+      let btnSuiv = pageFragment.querySelector('[data-action="page-suivante"]');
+      if (btnSuiv) {
+        btnSuiv.disabled = M.pagination.page >= M.pagination.pagesTotal;
+        btnSuiv.addEventListener("click", () => {
+          C.changerPage(M.pagination.page + 1);
+        });
+      }
+
+      let conteneurBoutonsPages = pageFragment.querySelector('[data-ref="pagination-boutons"]');
+      if (conteneurBoutonsPages) {
+        conteneurBoutonsPages.replaceChildren();
+        for (let p = 1; p <= M.pagination.pagesTotal; p++) {
+          let btnPage = document.createElement("button");
+          btnPage.type = "button";
+          btnPage.textContent = String(p);
+
+          if (p === M.pagination.page) {
+            btnPage.className =
+              "rounded-xl bg-input px-3.5 py-1.5 text-body-sm font-bold text-white shadow-xs cursor-default";
           } else {
-            apercuEl.remove();
+            btnPage.className =
+              "rounded-xl bg-accent hover:bg-input px-3.5 py-1.5 text-body-sm font-medium text-white transition cursor-pointer";
+            btnPage.addEventListener("click", () => {
+              C.changerPage(p);
+            });
+          }
+
+          conteneurBoutonsPages.appendChild(btnPage);
+        }
+      }
+
+      // Remplissage de l'encadré Détail de la commande sélectionnée uniquement si une commande est choisie
+      let cmdSelectionnee = M.commandeSelectionneeId !== null
+        ? M.commandes.find((c) => c.id === M.commandeSelectionneeId)
+        : null;
+
+      if (cmdSelectionnee && carteDetail) {
+        carteDetail.classList.remove("hidden");
+
+        let detNumero = carteDetail.querySelector('[data-ref="detail-numero-commande"]');
+        if (detNumero) detNumero.textContent = cmdSelectionnee.numero_commande;
+
+        let detDate = carteDetail.querySelector('[data-ref="detail-date-commande"]');
+        if (detDate) detDate.textContent = formaterDateDetail(cmdSelectionnee.date_commande);
+
+        let detBadge = carteDetail.querySelector('[data-ref="detail-badge-statut"]');
+        if (detBadge) detBadge.textContent = cmdSelectionnee.statut;
+
+        let detTotal = carteDetail.querySelector('[data-ref="detail-total-commande"]');
+        if (detTotal) detTotal.textContent = formaterPrix(cmdSelectionnee.total);
+
+        let listeArticlesEl = carteDetail.querySelector('[data-ref="detail-liste-articles"]');
+        if (listeArticlesEl) {
+          listeArticlesEl.replaceChildren();
+
+          if (Array.isArray(cmdSelectionnee.lignes) && cmdSelectionnee.lignes.length > 0) {
+            for (let j = 0, nbL = cmdSelectionnee.lignes.length; j < nbL; j++) {
+              let ligne = cmdSelectionnee.lignes[j];
+              let ligneFrag = htmlToFragment(ligneDetailArticleTemplate);
+
+              let imgEl = ligneFrag.querySelector('[data-ref="article-image"]');
+              let placeholderEl = ligneFrag.querySelector('[data-ref="article-placeholder"]');
+              let urlImage = resoudreUrlImage(ligne.image_url);
+              if (imgEl && urlImage) {
+                imgEl.src = urlImage;
+                imgEl.alt = ligne.nom_produit || "Produit";
+                imgEl.classList.remove("hidden");
+                placeholderEl?.classList.add("hidden");
+                imgEl.onerror = () => {
+                  imgEl.classList.add("hidden");
+                  placeholderEl?.classList.remove("hidden");
+                };
+              }
+
+              let nomEl = ligneFrag.querySelector('[data-ref="article-nom"]');
+              if (nomEl) nomEl.textContent = ligne.nom_produit;
+
+              let optionEl = ligneFrag.querySelector('[data-ref="article-option"]');
+              if (optionEl) {
+                optionEl.textContent = ligne.nom_variante || "Sans option";
+              }
+
+              let prixUnitEl = ligneFrag.querySelector('[data-ref="article-prix-unitaire"]');
+              if (prixUnitEl) {
+                prixUnitEl.textContent = `${formaterPrix(ligne.prix_unitaire)} / unité`;
+              }
+
+              let qteEl = ligneFrag.querySelector('[data-ref="article-quantite"]');
+              if (qteEl) {
+                qteEl.textContent = `× ${ligne.quantite}`;
+              }
+
+              let totalLigneEl = ligneFrag.querySelector('[data-ref="article-total-ligne"]');
+              if (totalLigneEl) {
+                totalLigneEl.textContent = formaterPrix(ligne.total_ligne);
+              }
+
+              listeArticlesEl.appendChild(ligneFrag);
+            }
           }
         }
 
-        let totalEl = carteFrag.querySelector('[data-ref="total-commande"]');
-        if (totalEl) totalEl.textContent = formaterPrix(cmd.total);
-
-        let lienEl = carteFrag.querySelector('[data-ref="lien-detail"]');
-        if (lienEl) {
-          lienEl.setAttribute("href", `/confirmation-commande/${cmd.numero_commande}`);
+        let btnCommanderANouveau = carteDetail.querySelector(
+          '[data-action="commander-a-nouveau"]'
+        );
+        if (btnCommanderANouveau) {
+          btnCommanderANouveau.addEventListener("click", () => {
+            C.commanderANouveau(cmdSelectionnee);
+          });
         }
-
-        listeCommandes.appendChild(carteFrag);
+      } else if (carteDetail) {
+        carteDetail.classList.add("hidden");
       }
     }
   }
@@ -428,10 +743,11 @@ V.createPageFragment = function () {
 };
 
 /**
- * Fonction d'entrée pour la route /compte.
+ * Fonction d'entrée pour la route /compte ou /commandes.
  *
+ * @param {object} [params={}]
  * @returns {Promise<DocumentFragment>}
  */
-export function ComptePage() {
-  return C.init();
+export function ComptePage(params) {
+  return C.init(params);
 }

@@ -1,5 +1,5 @@
 import { genericRenderer, htmlToFragment } from "../../lib/utils.js";
-import { calculerEtatStock } from "../carte-produit/index.js";
+import { calculerEtatStock, resoudreUrlImage } from "../carte-produit/index.js";
 import placeholderImg from "../../../assets/landscape-placeholder.svg";
 import template from "./template.html?raw";
 import templateVignette from "./vignette.html?raw";
@@ -11,29 +11,8 @@ import templateVignette from "./vignette.html?raw";
  * @param {object} [produit={}]
  * @returns {string}
  */
-export function resoudreImageSource(source, produit = {}) {
-  if (source && typeof source === "string") {
-    let nettoyee = source.trim();
-    if (
-      nettoyee.startsWith("http://") ||
-      nettoyee.startsWith("https://") ||
-      nettoyee.startsWith("data:") ||
-      nettoyee.startsWith("blob:")
-    ) {
-      return nettoyee;
-    }
-    if (nettoyee.startsWith("/assets/") || nettoyee.includes("assets/")) {
-      return nettoyee;
-    }
-
-    let nomFichier = nettoyee.includes("/") ? nettoyee.split("/").pop() : nettoyee;
-    let base = import.meta.env.BASE_URL || "/";
-    let racine = base.endsWith("/") ? base : `${base}/`;
-    return `${racine}api/products/image?nom=${encodeURIComponent(nomFichier)}`;
-  }
-
-  // Image de secours : placeholder SVG officiel
-  return placeholderImg;
+export function resoudreImageSource(source) {
+  return resoudreUrlImage(source);
 }
 
 /**

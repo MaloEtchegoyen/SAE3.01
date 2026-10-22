@@ -1,25 +1,60 @@
-<article class="flex flex-col justify-between gap-4 rounded-2xl bg-accent p-5 text-white shadow-xs sm:flex-row sm:items-center">
-  <div class="space-y-1">
-    <div class="flex flex-wrap items-center gap-2">
-      <span data-ref="numero-commande" class="font-mono text-body-sm font-bold tracking-wider"></span>
-      <span data-ref="badge-statut" class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-semibold"></span>
+<article class="rounded-2xl bg-accent p-5 text-white shadow-xs transition">
+  <!-- En-tête de la commande -->
+  <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div class="space-y-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <span data-ref="numero-commande" class="font-mono text-body-sm font-bold tracking-wider"></span>
+        <span data-ref="badge-statut" class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-semibold"></span>
+      </div>
+      <p class="text-caption text-white/80">
+        Passée le <span data-ref="date-commande"></span>
+      </p>
+      <p data-ref="articles-apercu" class="text-caption text-white/90 italic line-clamp-1"></p>
     </div>
-    <p class="text-caption text-white/80">
-      Passée le <span data-ref="date-commande"></span>
-    </p>
-    <p data-ref="articles-apercu" class="text-caption text-white/90 italic line-clamp-1"></p>
+
+    <div class="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:gap-2">
+      <p data-ref="total-commande" class="text-title-sm font-bold"></p>
+      <div class="inline-flex items-center gap-2">
+        <button
+          type="button"
+          data-action="toggle-detail"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-input px-3.5 py-1.5 text-caption font-semibold text-white transition hover:bg-input-hover cursor-pointer"
+        >
+          <span data-ref="texte-btn-detail">Voir le détail</span>
+          <svg data-ref="icone-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <a
+          data-ref="lien-detail"
+          href="#"
+          data-link
+          class="inline-flex rounded-lg border border-white/20 px-3 py-1.5 text-caption font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+          title="Consulter le reçu complet"
+        >
+          Reçu
+        </a>
+      </div>
+    </div>
   </div>
 
-  <div class="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:gap-2">
-    <p data-ref="total-commande" class="text-title-sm font-bold"></p>
-    <a
-      data-ref="lien-detail"
-      href="#"
-      data-link
-      class="inline-flex rounded-lg bg-input px-3.5 py-1.5 text-caption font-semibold text-white transition hover:bg-input-hover"
-    >
-      Voir détail
-    </a>
+  <!-- Zone de détail dépliable accordéon (SUI-c) -->
+  <div data-ref="zone-detail" class="mt-4 pt-4 border-t border-white/20 space-y-3 hidden">
+    <h4 class="text-caption uppercase tracking-wider font-semibold text-white/70">
+      Articles commandés
+    </h4>
+    <div data-ref="liste-lignes-detail" class="divide-y divide-white/10"></div>
+
+    <div class="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-caption text-white/80">
+      <span>Retrait : Comptoir Click & Collect Café Feuillette</span>
+      <a
+        data-ref="lien-recu-complet"
+        href="#"
+        data-link
+        class="underline hover:text-white font-medium"
+      >
+        Ouvrir la page de confirmation complète →
+      </a>
+    </div>
   </div>
 </article>
-

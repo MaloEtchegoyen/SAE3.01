@@ -4,6 +4,7 @@ import { navigate } from "../../lib/router.js";
 import { htmlToFragment, escapeHtml } from "../../lib/utils.js";
 import { formaterPrix } from "../../lib/format.js";
 import { MessageView } from "../../ui/message/index.js";
+import { resoudreUrlImage, placeholderImg } from "../../ui/carte-produit/index.js";
 import template from "./template.html?raw";
 
 /**
@@ -166,9 +167,12 @@ V.createPageFragment = function () {
 
     for (let i = 0; i < cmd.lignes.length; i++) {
       let ligne = cmd.lignes[i];
-      let imgHtml = ligne.image_url
-        ? `<img src="${escapeHtml(ligne.image_url)}" alt="${escapeHtml(ligne.nom_produit)}" class="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />`
-        : `<div class="h-14 w-14 rounded-xl bg-subtle border border-border flex items-center justify-center text-caption text-content-muted shrink-0">Café</div>`;
+      let urlImage = resoudreUrlImage(ligne.image_url);
+      let imgHtml = `
+        <div class="h-14 w-14 rounded-xl bg-subtle border border-border flex items-center justify-center shrink-0 overflow-hidden">
+          <img src="${escapeHtml(urlImage)}" alt="${escapeHtml(ligne.nom_produit)}" class="h-full w-full object-cover" onerror="this.src='${escapeHtml(placeholderImg)}'" />
+        </div>
+      `;
 
       let itemHtml = `
         <div class="flex items-center justify-between py-3.5 gap-4">

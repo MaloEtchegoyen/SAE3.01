@@ -5,6 +5,7 @@ import { navigate } from "../../lib/router.js";
 import { htmlToFragment, escapeHtml } from "../../lib/utils.js";
 import { formaterPrix } from "../../lib/format.js";
 import { MessageView } from "../../ui/message/index.js";
+import { resoudreUrlImage, placeholderImg } from "../../ui/carte-produit/index.js";
 import template from "./template.html?raw";
 
 /**
@@ -168,9 +169,12 @@ V.createPageFragment = function () {
     for (let i = 0; i < M.articles.length; i++) {
       let article = M.articles[i];
       let totalLigne = Number(article.prix || 0) * Number(article.quantite || 1);
-      let imgHtml = article.image
-        ? `<img src="${escapeHtml(article.image)}" alt="${escapeHtml(article.nom)}" class="h-16 w-16 rounded-xl object-cover border border-feuillette-creme/40 shrink-0" />`
-        : `<div class="h-16 w-16 rounded-xl bg-feuillette-creme/40 flex items-center justify-center text-caption text-feuillette-charbon/50 shrink-0">Café</div>`;
+      let urlImage = resoudreUrlImage(article.image);
+      let imgHtml = `
+        <div class="h-16 w-16 rounded-xl bg-feuillette-creme/20 border border-feuillette-creme/40 flex items-center justify-center shrink-0 overflow-hidden">
+          <img src="${escapeHtml(urlImage)}" alt="${escapeHtml(article.nom)}" class="h-full w-full object-cover" onerror="this.src='${escapeHtml(placeholderImg)}'" />
+        </div>
+      `;
 
       let ligneHtml = `
         <div class="flex items-center justify-between py-4 gap-4">
