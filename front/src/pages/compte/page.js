@@ -1,38 +1,172 @@
-﻿import { AuthData } from "../../data/auth.js";
-import { CartData } from "../../data/cart.js";
+import { AuthData } from "../../data/auth.js";
+import { UserData } from "../../data/user.js";
+import { OrderData } from "../../data/order.js";
 import { navigate } from "../../lib/router.js";
-import { escapeHtml, htmlToFragment } from "../../lib/utils.js";
+import { htmlToFragment } from "../../lib/utils.js";
+import { formaterPrix } from "../../lib/format.js";
 import { MessageView } from "../../ui/message/index.js";
 import template from "./template.html?raw";
+import carteCommandeTemplate from "./carte-commande.html?raw";
 
 /**
- * Modèle local de la page Compte.
- * Ne touche jamais au DOM.
+ * Modèle local de la page Compte (Espace personnel client).
+ * Strictement découplé du DOM (MVC).
  */
 let M = {
   utilisateur: null,
-  message: null, // { type: "succes" | "erreur" | "info", texte: string } | null
+  profil: {
+    id: 0,
+    login: "",
+    email: "",
+    role: "user",
+  },
+  commandes: [],
+  chargement: true,
+  ongletActif: "profil", // 'profil' | 'commandes'
+  message: null, // { type: 'succes' | 'erreur' | 'info', texte: string } | null
+  enCoursDeTraitement: false,
 };
 
 let C = {};
 
 /**
- * Charge les informations de session courante.
+ * Charge les données initiales du profil et des commandes.
  */
 C.charger = async function () {
+  M.chargement = true;
   try {
-    let etat = await AuthData.verifierSession();
-    M.utilisateur = etat.connecte ? etat : null;
+    let session = await AuthData.verifierSession();
+    if (!session.connecte) {
+      M.utilisateur = null;
+      return;
+    }
+    M.utilisateur = session;
+
+    // Charger le profil
+    try {
+      let profil = await UserData.obtenirProfil();
+      M.profil = {
+        id: profil.id,
+        login: profil.login || session.utilisateur,
+        email: profil.email || profil.login || session.utilisateur,
+        role: profil.role || session.role || "user",
+      };
+    } catch {
+      M.profil = {
+        id: 0,
+        login: session.utilisateur,
+        email: session.utilisateur,
+        role: session.role || "user",
+      };
+    }
+
+    // Charger les commandes récentes
+    try {
+      let commandes = await OrderData.listerMesCommandes(10);
+      M.commandes = Array.isArray(commandes) ? commandes : [];
+    } catch {
+      M.commandes = [];
+    }
   } catch (erreur) {
-    M.utilisateur = null;
-    M.message = { type: "erreur", texte: erreur.message };
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors du chargement de l'espace personnel.",
+    };
+  } finally {
+    M.chargement = false;
   }
 };
 
 /**
- * Traitement de la déconnexion.
+ * Changement de l'onglet actif.
+ *
+ * @param {string} onglet
  */
-C.handler_deconnexion = async function () {
+C.changerOnglet = function (onglet) {
+  M.ongletActif = onglet;
+  M.message = null;
+  V.rafraichir();
+};
+
+/**
+ * Traite la soumission du formulaire de modification d'email et mot de passe.
+ *
+ * @param {{ email: string, ancienMotDePasse?: string, nouveauMotDePasse?: string }} donnees
+ */
+C.enregistrerModifications = async function (donnees) {
+  if (M.enCoursDeTraitement) return;
+
+  let email = donnees.email.trim();
+  let ancienMdp = donnees.ancienMotDePasse || "";
+  let nouveauMdp = donnees.nouveauMotDePasse || "";
+
+  if (!email) {
+    M.message = {
+      type: "erreur",
+      texte: "L'adresse email est obligatoire.",
+    };
+    V.rafraichir();
+    return;
+  }
+
+  // Si l'utilisateur tente de changer de mot de passe (DoD spécifique)
+  if (nouveauMdp) {
+    if (!ancienMdp) {
+      M.message = {
+        type: "erreur",
+        texte: "Pour modifier votre mot de passe, vous devez obligatoirement renseigner votre mot de passe actuel.",
+      };
+      V.rafraichir();
+      return;
+    }
+    if (nouveauMdp.length < 6) {
+      M.message = {
+        type: "erreur",
+        texte: "Le nouveau mot de passe doit comporter au moins 6 caractères.",
+      };
+      V.rafraichir();
+      return;
+    }
+  }
+
+  M.enCoursDeTraitement = true;
+  M.message = null;
+  V.rafraichir();
+
+  try {
+    // 1. Mettre à jour l'email (nom transmis identique à l'email ou login pour compatibilité API)
+    let reponseProfil = await UserData.modifierProfil({ nom: email, email });
+    M.profil.email = reponseProfil.profil?.email || email;
+
+    // 2. Si un nouveau mot de passe a été fourni, le mettre à jour
+    if (nouveauMdp) {
+      await UserData.modifierMotDePasse({
+        ancienMotDePasse: ancienMdp,
+        nouveauMotDePasse: nouveauMdp,
+      });
+    }
+
+    M.message = {
+      type: "succes",
+      texte: nouveauMdp
+        ? "Vos informations personnelles et votre mot de passe ont été mis à jour avec succès."
+        : "Vos informations personnelles ont été mises à jour avec succès.",
+    };
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors de l'enregistrement des modifications.",
+    };
+  } finally {
+    M.enCoursDeTraitement = false;
+    V.rafraichir();
+  }
+};
+
+/**
+ * Déconnexion de l'utilisateur.
+ */
+C.deconnexion = async function () {
   try {
     await AuthData.logout();
     M.utilisateur = null;
@@ -48,7 +182,8 @@ C.handler_deconnexion = async function () {
 
 /**
  * Initialisation de la page Compte.
- * Redirige vers /connexion si l'utilisateur n'est pas connecté.
+ *
+ * @returns {Promise<DocumentFragment>}
  */
 C.init = async function () {
   M.message = null;
@@ -82,10 +217,109 @@ V.rafraichir = function () {
 };
 
 /**
- * Déduit l'interface HTML à partir de l'état M.
+ * Formate une date au format français lisible.
+ *
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function formaterDateLocale(dateStr) {
+  if (!dateStr) return "";
+  try {
+    let d = new Date(dateStr.replace(" ", "T"));
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Retourne le style et libellé d'un badge de statut de commande.
+ *
+ * @param {string} statut
+ * @returns {{ classes: string, libelle: string }}
+ */
+function obtenirBadgeStatut(statut) {
+  let s = (statut || "").toLowerCase();
+  if (s === "en cours") {
+    return {
+      classes: "bg-amber-50 text-amber-800 border-amber-200",
+      libelle: "En cours",
+    };
+  }
+  if (s === "disponible") {
+    return {
+      classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      libelle: "Disponible",
+    };
+  }
+  if (s === "retirée" || s === "retiree") {
+    return {
+      classes: "bg-slate-100 text-slate-700 border-slate-200",
+      libelle: "Retirée",
+    };
+  }
+  if (s === "annulée" || s === "annulee") {
+    return {
+      classes: "bg-red-50 text-red-700 border-red-200",
+      libelle: "Annulée",
+    };
+  }
+  return {
+    classes: "bg-stone-100 text-stone-700 border-stone-200",
+    libelle: statut || "Inconnu",
+  };
+}
+
+/**
+ * Construit le fragment principal de la page en fonction de l'état M.
+ *
+ * @returns {DocumentFragment}
  */
 V.createPageFragment = function () {
   let pageFragment = htmlToFragment(template);
+
+  // Nom dynamique / identifiant dans le titre d'accueil
+  let nomEl = pageFragment.querySelector('[data-ref="nom-client"]');
+  if (nomEl) {
+    nomEl.textContent = M.profil.email || M.profil.login || "";
+  }
+
+  // Déconnexion
+  let btnDeconnexion = pageFragment.querySelector('[data-action="deconnexion"]');
+  if (btnDeconnexion) {
+    btnDeconnexion.addEventListener("click", () => {
+      C.deconnexion();
+    });
+  }
+
+  // Gestion des onglets de navigation latérale
+  let tabButtons = pageFragment.querySelectorAll("[data-tab]");
+  for (let i = 0, nb = tabButtons.length; i < nb; i++) {
+    let btn = tabButtons[i];
+    let nomTab = btn.getAttribute("data-tab");
+    let estActif = nomTab === M.ongletActif;
+
+    if (estActif) {
+      btn.className =
+        "flex w-full items-center rounded-xl bg-input px-4 py-3 text-left text-body-sm font-semibold text-white shadow-xs cursor-pointer";
+      btn.setAttribute("aria-selected", "true");
+    } else {
+      btn.className =
+        "flex w-full items-center rounded-xl px-4 py-3 text-left text-body-sm font-medium text-white/90 hover:text-white transition cursor-pointer";
+      btn.setAttribute("aria-selected", "false");
+    }
+
+    btn.addEventListener("click", () => {
+      C.changerOnglet(nomTab);
+    });
+  }
 
   // Slot message
   let slotMessage = pageFragment.querySelector('slot[name="message"]');
@@ -97,92 +331,104 @@ V.createPageFragment = function () {
     }
   }
 
-  // Slot profil
-  let slotProfil = pageFragment.querySelector('slot[name="profil"]');
-  if (slotProfil && M.utilisateur && M.utilisateur.connecte) {
-    let nbPanier = CartData.compterArticles();
-    let isAdmin = M.utilisateur.role === "admin";
-    let profilHtml = `
-      <div class="rounded-2xl border border-feuillette-creme/60 bg-white p-6 shadow-sm sm:p-8">
-        <div class="flex items-center gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div>
-            <h2 class="text-title-sm font-bold text-feuillette-charbon">Mon compte client</h2>
-            <p class="text-body-sm text-feuillette-charbon/70 font-medium">${escapeHtml(M.utilisateur.utilisateur)}</p>
-            <span class="mt-1 inline-flex items-center rounded-md bg-feuillette-creme/50 px-2 py-0.5 text-caption font-semibold text-feuillette-charbon">
-              ${isAdmin ? "Administrateur" : "Client"}
-            </span>
-          </div>
-        </div>
+  // Récupération des sections de contenu
+  let sectionProfil = pageFragment.querySelector('[data-ref="section-profil"]');
+  let sectionCommandes = pageFragment.querySelector('[data-ref="section-commandes"]');
 
-        <div class="mt-8 flex flex-col gap-3">
-          <a
-            href="/panier"
-            data-link
-            class="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-6 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m15 11-1 9" />
-              <path d="m19 11-4-7" />
-              <path d="M2 11h20" />
-              <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
-              <path d="m4.5 15.5 15 0" />
-              <path d="m5 11 4-7" />
-              <path d="m9 11 1 9" />
-            </svg>
-            <span>Accéder à mon panier (${nbPanier} article${nbPanier > 1 ? "s" : ""})</span>
-          </a>
+  if (M.ongletActif === "profil") {
+    sectionProfil?.classList.remove("hidden");
+    sectionCommandes?.classList.add("hidden");
 
-          ${
-            isAdmin
-              ? `<a
-                  href="/admin"
-                  data-link
-                  class="flex h-11 w-full items-center justify-center rounded-lg border border-brand bg-transparent px-6 text-body-sm font-medium text-brand transition-colors hover:bg-brand/5"
-                >
-                  Panneau d'administration
-                </a>`
-              : ""
-          }
+    // Affichage de l'email
+    let infoEmail = pageFragment.querySelector('[data-ref="info-email"]');
+    if (infoEmail) {
+      infoEmail.textContent = M.profil.email || M.profil.login || "";
+    }
 
-          <a
-            href="/"
-            data-link
-            class="flex h-11 w-full items-center justify-center rounded-lg border border-feuillette-creme bg-white px-6 text-body-sm font-medium text-feuillette-charbon transition-colors hover:bg-feuillette-blanc"
-          >
-            Parcourir le catalogue
-          </a>
+    // Remplissage du champ email
+    let champEmail = pageFragment.querySelector('[data-ref="champ-email"]');
+    if (champEmail) {
+      champEmail.value = M.profil.email || "";
+    }
 
-          <button
-            type="button"
-            data-action="se-deconnecter"
-            class="mt-2 flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-red-50/50 text-body-sm font-medium text-red-700 transition-colors hover:bg-red-100/60 cursor-pointer"
-          >
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-    `;
-    let fragmentProfil = htmlToFragment(profilHtml);
-    let btnDeconnexion = fragmentProfil.querySelector('[data-action="se-deconnecter"]');
-    if (btnDeconnexion) {
-      btnDeconnexion.addEventListener("click", () => {
-        C.handler_deconnexion();
+    let btnSoumettre = pageFragment.querySelector('[data-ref="btn-soumettre"]');
+    if (btnSoumettre) {
+      btnSoumettre.disabled = M.enCoursDeTraitement;
+      btnSoumettre.textContent = M.enCoursDeTraitement
+        ? "Enregistrement..."
+        : "Enregistrer les modifications";
+    }
+
+    let form = pageFragment.querySelector('[data-form="modifier-profil"]');
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let formData = new FormData(form);
+        C.enregistrerModifications({
+          email: formData.get("email") || "",
+          ancienMotDePasse: formData.get("ancienMotDePasse") || "",
+          nouveauMotDePasse: formData.get("nouveauMotDePasse") || "",
+        });
       });
     }
-    slotProfil.replaceWith(fragmentProfil);
+  } else if (M.ongletActif === "commandes") {
+    sectionProfil?.classList.add("hidden");
+    sectionCommandes?.classList.remove("hidden");
+
+    let blocVide = pageFragment.querySelector('[data-ref="commandes-vide"]');
+    let listeCommandes = pageFragment.querySelector('[data-ref="liste-commandes"]');
+
+    if (M.commandes.length === 0) {
+      blocVide?.classList.remove("hidden");
+      listeCommandes?.classList.add("hidden");
+    } else {
+      blocVide?.classList.add("hidden");
+      listeCommandes?.classList.remove("hidden");
+
+      for (let i = 0, nb = M.commandes.length; i < nb; i++) {
+        let cmd = M.commandes[i];
+        let carteFrag = htmlToFragment(carteCommandeTemplate);
+
+        let numEl = carteFrag.querySelector('[data-ref="numero-commande"]');
+        if (numEl) numEl.textContent = cmd.numero_commande;
+
+        let badgeEl = carteFrag.querySelector('[data-ref="badge-statut"]');
+        if (badgeEl) {
+          let badgeInfo = obtenirBadgeStatut(cmd.statut);
+          badgeEl.className = `inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-semibold ${badgeInfo.classes}`;
+          badgeEl.textContent = badgeInfo.libelle;
+        }
+
+        let dateEl = carteFrag.querySelector('[data-ref="date-commande"]');
+        if (dateEl) dateEl.textContent = formaterDateLocale(cmd.date_commande);
+
+        let apercuEl = carteFrag.querySelector('[data-ref="articles-apercu"]');
+        if (apercuEl) {
+          if (cmd.articles_apercu) {
+            apercuEl.textContent = cmd.articles_apercu;
+          } else {
+            apercuEl.remove();
+          }
+        }
+
+        let totalEl = carteFrag.querySelector('[data-ref="total-commande"]');
+        if (totalEl) totalEl.textContent = formaterPrix(cmd.total);
+
+        let lienEl = carteFrag.querySelector('[data-ref="lien-detail"]');
+        if (lienEl) {
+          lienEl.setAttribute("href", `/confirmation-commande/${cmd.numero_commande}`);
+        }
+
+        listeCommandes.appendChild(carteFrag);
+      }
+    }
   }
 
   return pageFragment;
 };
 
 /**
- * Page de profil et historique de compte utilisateur.
+ * Fonction d'entrée pour la route /compte.
  *
  * @returns {Promise<DocumentFragment>}
  */

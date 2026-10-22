@@ -1,11 +1,146 @@
-﻿<section class="mx-auto max-w-xl px-4 py-10 sm:px-6 sm:py-16">
-  <div class="mb-8 text-center">
-    <h1 class="text-title-lg font-bold tracking-tight text-feuillette-charbon">Espace Client</h1>
-    <p class="mt-2 text-body text-feuillette-charbon/70">
-      Gérez votre compte et finalisez vos commandes Café Feuillette
-    </p>
+<section class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+  <!-- Titre de bienvenue style maquette -->
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+      Bonjour <span data-ref="nom-client"></span> !!
+    </h1>
+  </header>
+
+  <!-- Slot message d'erreur ou succès -->
+  <div class="mb-6 max-w-4xl">
+    <slot name="message"></slot>
   </div>
 
-  <slot name="message"></slot>
-  <slot name="profil"></slot>
+  <!-- Conteneur en 2 colonnes (Menu latéral gauche + Contenu droit) -->
+  <div class="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr] items-start">
+    <!-- Menu latéral gauche -->
+    <aside aria-label="Menu espace client">
+      <nav class="flex flex-col gap-2 rounded-2xl bg-accent p-4 text-white shadow-xs">
+        <button
+          type="button"
+          data-tab="profil"
+          class="flex w-full items-center rounded-xl px-4 py-3 text-left text-body-sm font-medium transition cursor-pointer text-white"
+        >
+          Mes informations
+        </button>
+
+        <button
+          type="button"
+          data-tab="commandes"
+          class="flex w-full items-center rounded-xl px-4 py-3 text-left text-body-sm font-medium transition cursor-pointer text-white/90 hover:text-white"
+        >
+          Mes commandes
+        </button>
+
+        <button
+          type="button"
+          data-action="deconnexion"
+          class="flex w-full items-center rounded-xl px-4 py-3 text-left text-body-sm font-medium transition cursor-pointer text-white/90 hover:text-white"
+        >
+          Se déconnecter
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Zone de contenu droite -->
+    <main class="min-w-0">
+      <!-- Section Profil (Mes informations) -->
+      <section data-ref="section-profil" class="space-y-10">
+
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-neutral-900 mb-4">
+            Modifier vos informations personnelles :
+          </h2>
+
+          <form data-form="modifier-profil" class="max-w-xl rounded-2xl bg-accent p-6 sm:p-8 text-white space-y-4 shadow-xs">
+            <div>
+              <label for="champ-email" class="block text-body-sm font-medium text-white mb-1">
+                Email
+              </label>
+              <input
+                id="champ-email"
+                name="email"
+                type="email"
+                required
+                placeholder="•••••"
+                data-ref="champ-email"
+                class="w-full rounded-xl bg-input px-4 py-3 text-body-sm text-white placeholder-white/70 border-0 focus:outline-hidden focus:ring-2 focus:ring-white/40"
+              />
+            </div>
+
+            <div>
+              <label for="champ-ancien-mdp" class="block text-body-sm font-medium text-white mb-1">
+                Mot de passe actuel
+              </label>
+              <input
+                id="champ-ancien-mdp"
+                name="ancienMotDePasse"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Obligatoire uniquement en cas de changement"
+                data-ref="champ-ancien-mdp"
+                class="w-full rounded-xl bg-input px-4 py-3 text-body-sm text-white placeholder-white/70 border-0 focus:outline-hidden focus:ring-2 focus:ring-white/40"
+              />
+            </div>
+
+            <div>
+              <label for="champ-nouveau-mdp" class="block text-body-sm font-medium text-white mb-1">
+                Nouveau mot de passe
+              </label>
+              <input
+                id="champ-nouveau-mdp"
+                name="nouveauMotDePasse"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Placeholder"
+                data-ref="champ-nouveau-mdp"
+                class="w-full rounded-xl bg-input px-4 py-3 text-body-sm text-white placeholder-white/70 border-0 focus:outline-hidden focus:ring-2 focus:ring-white/40"
+              />
+            </div>
+
+            <p class="text-caption text-white/90">
+              Laissez le mot de passe vide pour conserver le mot de passe actuel.
+            </p>
+
+            <div class="pt-2">
+              <button
+                type="submit"
+                data-ref="btn-soumettre"
+                class="rounded-xl bg-input hover:bg-input-hover px-6 py-3 text-body-sm font-medium text-white shadow-xs transition cursor-pointer disabled:opacity-50"
+              >
+                Modifier
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Section Commandes (Mes commandes) -->
+      <section data-ref="section-commandes" class="max-w-2xl space-y-4 hidden">
+          <h2 class="text-2xl font-bold tracking-tight text-neutral-900">
+            Mes commandes :
+          </h2>
+
+        <!-- Bloc vide si aucune commande -->
+        <div data-ref="commandes-vide" class="rounded-2xl bg-accent p-8 text-center text-white shadow-xs hidden">
+          <h3 class="text-title-sm font-bold">Aucune commande récente</h3>
+          <p class="mt-2 text-body-sm text-white/90">
+            Vous n'avez pas encore passé de commande chez Café Feuillette.
+          </p>
+          <div class="mt-6">
+            <a
+              href="/"
+              data-link
+              class="inline-flex rounded-xl bg-input px-6 py-3 text-body-sm font-medium text-white transition hover:bg-input-hover"
+            >
+              Découvrir le catalogue
+            </a>
+          </div>
+        </div>
+
+        <!-- Liste des cartes de commandes -->
+        <div data-ref="liste-commandes" class="space-y-3"></div>
+      </section>
+    </main>
+  </div>
 </section>

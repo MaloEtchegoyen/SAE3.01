@@ -421,6 +421,58 @@ final class OrderModel
      *     parPage: int
      * }
      */
+
+    /**
+     * Liste les commandes récentes d'un utilisateur donné, triées par date décroissante.
+     *
+     * @param int $utilisateurId
+     * @param int $limite
+     * @return array<int, array{
+     *     id: int,
+     *     numero_commande: string,
+     *     statut: string,
+     *     total: float,
+     *     date_commande: string,
+     *     nb_articles: int,
+     *     articles_apercu: string
+     * }>
+     */
+    public function listerParUtilisateur(int $utilisateurId, int $limite = 5): array
+    {
+        $limite = max(1, min(50, $limite));
+
+        $sql = "SELECT c.id, c.numero_commande, c.statut, c.total, c.date_commande,
+                       COALESCE((SELECT SUM(lc.quantite) FROM ligne_commande lc WHERE lc.commande_id = c.id), 0) AS nb_articles,
+                       COALESCE((SELECT GROUP_CONCAT(CONCAT(lc.quantite, 'x ', lc.nom_produit) SEPARATOR ', ')
+                                   FROM ligne_commande lc
+                                  WHERE lc.commande_id = c.id), '') AS articles_apercu
+                  FROM commande c
+                 WHERE c.utilisateur_id = :utilisateur_id
+              ORDER BY c.date_commande DESC
+                 LIMIT :limit";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':utilisateur_id', $utilisateurId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+        $lignesRaw = $stmt->fetchAll();
+
+        $resultats = [];
+        for ($i = 0, $nb = count($lignesRaw); $i < $nb; $i++) {
+            $row = $lignesRaw[$i];
+            $resultats[] = [
+                'id'              => (int) $row['id'],
+                'numero_commande' => (string) $row['numero_commande'],
+                'statut'          => (string) $row['statut'],
+                'total'           => (float) $row['total'],
+                'date_commande'   => (string) $row['date_commande'],
+                'nb_articles'     => (int) $row['nb_articles'],
+                'articles_apercu' => (string) $row['articles_apercu'],
+            ];
+        }
+
+        return $resultats;
+    }
     public function listerToutesAdmin(array $options = []): array
     {
         $tri = (string) ($options['tri'] ?? 'date_desc');

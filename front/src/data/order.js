@@ -40,6 +40,25 @@ let OrderData = {
    *   lignes: Array<object>
    * }>}
    */
+
+  /**
+   * Récupère les commandes récentes de l'utilisateur connecté : GET /api/orders
+   *
+   * @param {number} [limite=5]
+   * @returns {Promise<Array<{
+   *   id: number,
+   *   numero_commande: string,
+   *   statut: string,
+   *   total: number,
+   *   date_commande: string,
+   *   nb_articles: number,
+   *   articles_apercu: string
+   * }>>}
+   */
+  async listerMesCommandes(limite = 5) {
+    let reponse = await getRequest(`orders?limite=${encodeURIComponent(limite)}`);
+    return reponse;
+  },
   async obtenirCommande(numeroCommande) {
     let reponse = await getRequest(`orders/detail?numero=${encodeURIComponent(numeroCommande)}`);
     return reponse;
