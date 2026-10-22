@@ -90,7 +90,10 @@ let CartData = {
     let surcoutOptions = 0;
     let nomOptions = null;
 
-    if (Array.isArray(options) && options.length > 0) {
+    if (variante?.id) {
+      cle = `${produit.id}_var_${variante.id}`;
+      nomOptions = variante.nom ? String(variante.nom) : null;
+    } else if (Array.isArray(options) && options.length > 0) {
       let idsOptions = options
         .map((o) => `${o.optionId}:${o.valeurId}`)
         .sort()
@@ -100,20 +103,24 @@ let CartData = {
       options.forEach((o) => {
         surcoutOptions += Number(o.surcout || 0);
       });
-    } else if (variante?.id) {
-      cle = `${produit.id}_${variante.id}`;
     }
 
     let existant = articles.find((item) => item.cle === cle);
 
-    let prixBase = Number(variante?.prix ?? produit.prix ?? 0);
-    let prixFinal = roundPrix(prixBase + surcoutOptions);
-    let stock = Number(variante?.stock ?? produit.stock ?? 99);
+    let prixFinal = Number(
+      variante?.prix !== undefined
+        ? Number(variante.prix)
+        : roundPrix(Number(produit.prix ?? 0) + surcoutOptions)
+    );
+    let stock = Number(
+      variante?.stock !== undefined ? Number(variante.stock) : Number(produit.stock ?? 99)
+    );
     let qte = Math.max(1, Number(quantite || 1));
 
     let libelleVariante = nomOptions || (variante?.nom ? String(variante.nom) : null);
 
     if (existant) {
+      existant.stockMax = stock > 0 ? stock : 0;
       existant.quantite = stock > 0 ? Math.min(existant.quantite + qte, stock) : existant.quantite + qte;
     } else {
       articles.push({
@@ -126,7 +133,7 @@ let CartData = {
         prix: prixFinal,
         image: produit.image_url || produit.imageUrl || produit.image || produit.images?.[0]?.url || null,
         quantite: stock > 0 ? Math.min(qte, stock) : qte,
-        stockMax: stock > 0 ? stock : 99,
+        stockMax: stock > 0 ? stock : 0,
         slug: produit.slug || String(produit.id),
       });
     }

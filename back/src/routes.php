@@ -72,4 +72,5 @@ return [
     'POST   /api/admin/products/variantes'         => [ProductController::class, 'ajouterVariante'],
     'PUT    /api/admin/products/variantes'         => [ProductController::class, 'modifierVariante'],
     'DELETE /api/admin/products/variantes'         => [ProductController::class, 'supprimerVariante'],
+    'POST   /api/admin/products/variantes/generer' => [ProductController::class, 'genererVariantes'],
 ];

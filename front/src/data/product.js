@@ -332,5 +332,16 @@ ProductData.deleteOption = async function (optionId, productId) {
   });
 };
 
+/**
+ * Déclenche la génération automatique des combinaisons de variantes selon les options :
+ * POST /api/admin/products/variantes/generer
+ *
+ * @param {number} productId
+ * @returns {Promise<{ succes: boolean, message: string, variantes: Array<object> }>}
+ */
+ProductData.generateVariants = async function (productId) {
+  return postRequest("admin/products/variantes/generer", { product_id: productId });
+};
+
 export { ProductData };
 

@@ -41,23 +41,53 @@ C.charger = async function (slugOuId) {
     }
 
     M.produit = produit;
-    M.varianteActive = null;
-    M.quantite = Number(produit.stock ?? 0) > 0 ? 1 : 0;
     M.indexImage = 0;
     M.message = null;
 
-    // Pré-sélection par défaut des options obligatoires du produit (OPT-c)
+    // Résolution initiale des options et variantes (OPT-b)
     M.optionsChoisies = {};
-    if (Array.isArray(produit.options)) {
-      let nbOpts = produit.options.length;
-      for (let i = 0; i < nbOpts; i++) {
-        let opt = produit.options[i];
-        if (opt.valeurs && opt.valeurs.length > 0) {
-          if (opt.obligatoire || opt.valeurs.length === 1) {
-            M.optionsChoisies[opt.id] = opt.valeurs[0].id;
+    let variantes = Array.isArray(produit.variantes) ? produit.variantes : [];
+    let variantesAvecValeurs = variantes.filter(
+      (v) => Array.isArray(v.valeur_ids) && v.valeur_ids.length > 0
+    );
+
+    if (variantesAvecValeurs.length > 0) {
+      // Trouver de préférence une variante en stock (stock > 0), sinon la première
+      let varianteParDefaut =
+        variantesAvecValeurs.find((v) => Number(v.stock ?? 0) > 0) || variantesAvecValeurs[0];
+
+      if (varianteParDefaut && Array.isArray(produit.options)) {
+        let vIds = (varianteParDefaut.valeur_ids || []).map(Number);
+        for (let i = 0; i < produit.options.length; i++) {
+          let opt = produit.options[i];
+          let valTrouvee = opt.valeurs?.find((v) => vIds.includes(Number(v.id)));
+          if (valTrouvee) {
+            M.optionsChoisies[opt.id] = valTrouvee.id;
           }
         }
       }
+      M.varianteActive = varianteParDefaut;
+      let stockVar = Number(varianteParDefaut?.stock ?? 0);
+      M.quantite = stockVar > 0 ? 1 : 0;
+    } else {
+      if (Array.isArray(produit.options)) {
+        let nbOpts = produit.options.length;
+        for (let i = 0; i < nbOpts; i++) {
+          let opt = produit.options[i];
+          if (opt.valeurs && opt.valeurs.length > 0) {
+            if (opt.obligatoire || opt.valeurs.length === 1) {
+              M.optionsChoisies[opt.id] = opt.valeurs[0].id;
+            }
+          }
+        }
+      }
+      // Préférer la première variante avec du stock disponible
+      M.varianteActive =
+        variantes.length > 0
+          ? variantes.find((v) => Number(v.stock ?? 0) > 0 && Number(v.actif ?? 1) === 1) || variantes[0]
+          : null;
+      let stockBase = Number(M.varianteActive?.stock ?? produit.stock ?? 0);
+      M.quantite = stockBase > 0 ? 1 : 0;
     }
 
     // Mise à jour SEO (Title, Meta description, Schema.org)
@@ -154,11 +184,6 @@ C.handler_changer_quantite = function (nouvelleQte) {
   V.rafraichir();
 };
 
-C.handler_choisir_variante = function (variante) {
-  M.varianteActive = variante;
-  V.rafraichir();
-};
-
 C.handler_choisir_option = function (optionId, valeurId) {
   let opt = M.produit?.options?.find((o) => Number(o.id) === Number(optionId));
   // Si déjà sélectionné et facultatif, permettre de désélectionner, sinon basculer
@@ -167,15 +192,117 @@ C.handler_choisir_option = function (optionId, valeurId) {
   } else {
     M.optionsChoisies[optionId] = valeurId;
   }
+
+  // Recalcul de la variante correspondante (OPT-b)
+  let variantes = Array.isArray(M.produit?.variantes) ? M.produit.variantes : [];
+  let variantesAvecValeurs = variantes.filter(
+    (v) => Array.isArray(v.valeur_ids) && v.valeur_ids.length > 0
+  );
+
+  if (variantesAvecValeurs.length > 0) {
+    let idsChoisis = Object.values(M.optionsChoisies).map(Number).sort((a, b) => a - b);
+    let varianteTrouvee = variantesAvecValeurs.find((v) => {
+      let vIds = (v.valeur_ids || []).map(Number).sort((a, b) => a - b);
+      if (vIds.length !== idsChoisis.length) return false;
+      for (let k = 0; k < vIds.length; k++) {
+        if (vIds[k] !== idsChoisis[k]) return false;
+      }
+      return true;
+    });
+
+    // Si la combinaison exacte n'est pas trouvée ou épuisée (stock <= 0),
+    // rechercher une variante alternative EN STOCK (> 0) contenant la valeur sélectionnée
+    if ((!varianteTrouvee || Number(varianteTrouvee.stock ?? 0) <= 0) && valeurId) {
+      let numValId = Number(valeurId);
+      let variantesDisponibles = variantesAvecValeurs.filter(
+        (v) => (v.valeur_ids || []).map(Number).includes(numValId) && Number(v.stock ?? 0) > 0
+      );
+
+      if (variantesDisponibles.length > 0) {
+        // Retenir la variante qui partage le plus d'options avec le choix courant
+        let meilleureVariante = variantesDisponibles[0];
+        let maxCommuns = -1;
+        let nbVars = variantesDisponibles.length;
+
+        for (let i = 0; i < nbVars; i++) {
+          let cand = variantesDisponibles[i];
+          let candIds = (cand.valeur_ids || []).map(Number);
+          let communs = idsChoisis.filter((id) => candIds.includes(id)).length;
+          if (communs > maxCommuns) {
+            maxCommuns = communs;
+            meilleureVariante = cand;
+          }
+        }
+
+        varianteTrouvee = meilleureVariante;
+
+        // Réaligner M.optionsChoisies sur cette variante valide en stock
+        if (Array.isArray(M.produit.options)) {
+          let vIds = (varianteTrouvee.valeur_ids || []).map(Number);
+          let nbOpts = M.produit.options.length;
+          for (let o = 0; o < nbOpts; o++) {
+            let oObj = M.produit.options[o];
+            let valTrouvee = oObj.valeurs?.find((v) => vIds.includes(Number(v.id)));
+            if (valTrouvee) {
+              M.optionsChoisies[oObj.id] = valTrouvee.id;
+            }
+          }
+        }
+      }
+    }
+
+    M.varianteActive = varianteTrouvee || null;
+    let stockDispo = Number(M.varianteActive?.stock ?? 0);
+    if (!M.varianteActive || stockDispo <= 0) {
+      M.quantite = 0;
+    } else {
+      M.quantite = Math.min(Math.max(1, M.quantite), stockDispo);
+    }
+  }
+
   V.rafraichir();
 };
 
 C.handler_ajouter_panier = function (produit, quantite, optionsChoisies, variante) {
-  let qte = Number(quantite || M.quantite || 1);
+  let qte = Number(quantite || M.quantite || 0);
+  let stockDispo = Number(variante?.stock !== undefined ? variante.stock : (produit.stock ?? 0));
+
+  if (!variante && Array.isArray(produit.variantes) && produit.variantes.length > 0) {
+    let aDesVariantesCombinaisons = produit.variantes.some(
+      (v) => Array.isArray(v.valeur_ids) && v.valeur_ids.length > 0
+    );
+    if (aDesVariantesCombinaisons) {
+      M.message = {
+        type: "erreur",
+        texte: "Cette combinaison d'options n'est pas disponible.",
+      };
+      V.rafraichir();
+      return;
+    }
+  }
+
+  if (stockDispo <= 0) {
+    M.message = {
+      type: "erreur",
+      texte: "Cette variante est victime de son succès et actuellement épuisée.",
+    };
+    V.rafraichir();
+    return;
+  }
+
   if (qte <= 0) {
     M.message = {
       type: "erreur",
       texte: "Veuillez sélectionner au moins 1 produit.",
+    };
+    V.rafraichir();
+    return;
+  }
+
+  if (qte > stockDispo) {
+    M.message = {
+      type: "erreur",
+      texte: `Quantité demandée indisponible. Stock restant : ${stockDispo}.`,
     };
     V.rafraichir();
     return;
@@ -345,7 +472,6 @@ V.createPageFragment = function () {
         {
           onAjouterPanier: C.handler_ajouter_panier,
           onChangerQuantite: C.handler_changer_quantite,
-          onChoisirVariante: C.handler_choisir_variante,
           onChoisirOption: C.handler_choisir_option,
         }
       )

@@ -650,6 +650,9 @@ final class ProductController
     }
 
     /**
+     * Administration : Générer ou mettre à jour automatiquement les variantes d'un produit selon ses options.
+     */
+    /**
      * Administration : Lister les options personnalisables d'un produit.
      */
     public function listerOptions(Request $requete): void
@@ -686,5 +689,30 @@ final class ProductController
             Response::erreur('Erreur lors de la suppression de l\'option : ' . $e->getMessage(), 500);
         }
     }
-}
 
+    /**
+     * Administration : Générer ou mettre à jour automatiquement les variantes d'un produit selon ses options.
+     */
+    public function genererVariantes(Request $requete): void
+    {
+        $this->verifierAccesAdmin();
+
+        $corps = $requete->corps();
+        $productId = (int) ($corps['product_id'] ?? $corps['id'] ?? $requete->parametre('product_id') ?? $requete->parametre('id') ?? 0);
+
+        if ($productId <= 0) {
+            Response::erreur('Identifiant de produit requis', 400);
+        }
+
+        try {
+            $variantes = $this->produits->genererVariantesDepuisOptions($productId);
+            Response::json([
+                'succes'    => true,
+                'message'   => 'Combinaisons de variantes générées avec succès.',
+                'variantes' => $variantes,
+            ]);
+        } catch (Throwable $e) {
+            Response::erreur('Erreur lors de la génération des variantes : ' . $e->getMessage(), 500);
+        }
+    }
+}

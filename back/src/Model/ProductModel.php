@@ -74,8 +74,8 @@ final class ProductModel
         $sql = 'SELECT product.id,
                        product.nom,
                        product.category_id,
-                       product.prix,
-                       product.stock,
+                       COALESCE((SELECT MIN(pv.prix) FROM product_variant pv WHERE pv.product_id = product.id AND pv.actif = 1), product.prix) AS prix,
+                       COALESCE((SELECT SUM(pv.stock) FROM product_variant pv WHERE pv.product_id = product.id AND pv.actif = 1), product.stock) AS stock,
                        product.seuil_alerte,
                        product.description,
                        category.nom AS categorie,
@@ -131,8 +131,8 @@ final class ProductModel
             'SELECT product.id,
                     product.nom,
                     product.category_id,
-                    product.prix,
-                    product.stock,
+                    COALESCE((SELECT MIN(pv.prix) FROM product_variant pv WHERE pv.product_id = product.id AND pv.actif = 1), product.prix) AS prix,
+                    COALESCE((SELECT SUM(pv.stock) FROM product_variant pv WHERE pv.product_id = product.id AND pv.actif = 1), product.stock) AS stock,
                     product.seuil_alerte,
                     product.description,
                     product.actif,
@@ -584,6 +584,22 @@ final class ProductModel
 
             $variantId = (int) $this->pdo->lastInsertId();
 
+            if (!empty($donnees['valeur_ids']) && is_array($donnees['valeur_ids'])) {
+                $stmtValVar = $this->pdo->prepare(
+                    'INSERT IGNORE INTO product_variant_value (variant_id, option_value_id) VALUES (:variant_id, :option_value_id)'
+                );
+                $valIds = $donnees['valeur_ids'];
+                for ($v = 0, $nbV = count($valIds); $v < $nbV; $v++) {
+                    $optValId = (int) $valIds[$v];
+                    if ($optValId > 0) {
+                        $stmtValVar->execute([
+                            'variant_id'      => $variantId,
+                            'option_value_id' => $optValId,
+                        ]);
+                    }
+                }
+            }
+
             if ($stock > 0) {
                 $stmtAudit = $this->pdo->prepare(
                     'INSERT INTO stock_movement (product_id, variant_id, quantite, motif)
@@ -631,7 +647,7 @@ final class ProductModel
               WHERE id = :variant_id AND product_id = :product_id'
         );
 
-        return $stmt->execute([
+        $res = $stmt->execute([
             'variant_id'   => $variantId,
             'product_id'   => $productId,
             'nom'          => (string) $donnees['nom'],
@@ -640,6 +656,25 @@ final class ProductModel
             'seuil_alerte' => (int) $donnees['seuil_alerte'],
             'actif'        => isset($donnees['actif']) ? (int) $donnees['actif'] : 1,
         ]);
+
+        if ($res && isset($donnees['valeur_ids']) && is_array($donnees['valeur_ids'])) {
+            $this->pdo->prepare('DELETE FROM product_variant_value WHERE variant_id = :id')->execute(['id' => $variantId]);
+            $stmtInsert = $this->pdo->prepare(
+                'INSERT IGNORE INTO product_variant_value (variant_id, option_value_id) VALUES (:variant_id, :option_value_id)'
+            );
+            $valeurIds = $donnees['valeur_ids'];
+            for ($v = 0, $nbV = count($valeurIds); $v < $nbV; $v++) {
+                $optValId = (int) $valeurIds[$v];
+                if ($optValId > 0) {
+                    $stmtInsert->execute([
+                        'variant_id'      => $variantId,
+                        'option_value_id' => $optValId,
+                    ]);
+                }
+            }
+        }
+
+        return $res;
     }
 
     /**
@@ -675,6 +710,8 @@ final class ProductModel
      */
     public function listerVariantes(int $productId): array
     {
+        $this->initialiserTablesOptions();
+
         $stmt = $this->pdo->prepare(
             'SELECT id, product_id, nom, prix, stock, seuil_alerte, actif
                FROM product_variant
@@ -684,21 +721,73 @@ final class ProductModel
         $stmt->execute(['product_id' => $productId]);
         $lignes = $stmt->fetchAll();
 
-        return array_map(static function (array $ligne): array {
-            return [
-                'id'           => (int) $ligne['id'],
+        $nbLignes = count($lignes);
+        $resultat = [];
+
+        $stmtVals = $this->pdo->prepare(
+            'SELECT option_value_id
+               FROM product_variant_value
+              WHERE variant_id = :variant_id
+              ORDER BY option_value_id ASC'
+        );
+
+        for ($i = 0; $i < $nbLignes; $i++) {
+            $ligne = $lignes[$i];
+            $variantId = (int) $ligne['id'];
+
+            $stmtVals->execute(['variant_id' => $variantId]);
+            $rowsVals = $stmtVals->fetchAll();
+            $valeurIds = array_map(static function (array $v): int {
+                return (int) $v['option_value_id'];
+            }, $rowsVals);
+
+            $resultat[] = [
+                'id'           => $variantId,
                 'product_id'   => (int) $ligne['product_id'],
                 'nom'          => (string) $ligne['nom'],
                 'prix'         => (float) $ligne['prix'],
                 'stock'        => (int) $ligne['stock'],
                 'seuil_alerte' => (int) $ligne['seuil_alerte'],
                 'actif'        => (int) $ligne['actif'],
+                'valeur_ids'   => $valeurIds,
             ];
-        }, $lignes);
+        }
+
+        return $resultat;
     }
 
     /**
-     * Initialise automatiquement les tables product_option et product_option_value si inexistantes.
+     * OPT-b : Trouve une variante correspondant exactement à une liste d'identifiants de valeurs d'options.
+     *
+     * @param int $productId
+     * @param array<int, int> $valeurIds
+     * @return array{id: int, product_id: int, nom: string, prix: float, stock: int, seuil_alerte: int, actif: int, valeur_ids: array<int, int>}|null
+     */
+    public function trouverVarianteParValeurs(int $productId, array $valeurIds): ?array
+    {
+        $variantes = $this->listerVariantes($productId);
+        $nbVars = count($variantes);
+        if ($nbVars === 0) {
+            return null;
+        }
+
+        $valeursTriees = array_map('intval', $valeurIds);
+        sort($valeursTriees);
+
+        for ($i = 0; $i < $nbVars; $i++) {
+            $var = $variantes[$i];
+            $varVals = array_map('intval', $var['valeur_ids'] ?? []);
+            sort($varVals);
+            if ($varVals === $valeursTriees) {
+                return $var;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Initialise automatiquement les tables product_option, product_option_value, product_variant et product_variant_value si inexistantes.
      */
     public function initialiserTablesOptions(): void
     {
@@ -728,7 +817,30 @@ final class ProductModel
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
             );
 
-            // Vérifier s'il y a déjà des données, sinon insérer le jeu d'essai
+            $this->pdo->exec(
+                "CREATE TABLE IF NOT EXISTS product_variant (
+                    id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                    product_id INT(11) NOT NULL,
+                    nom VARCHAR(150) NOT NULL,
+                    prix DECIMAL(10,2) NOT NULL,
+                    stock INT(11) NOT NULL DEFAULT 0,
+                    seuil_alerte INT(11) NOT NULL DEFAULT 5,
+                    actif TINYINT(1) NOT NULL DEFAULT 1,
+                    PRIMARY KEY (id),
+                    KEY fk_product_variant_product (product_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+
+            $this->pdo->exec(
+                "CREATE TABLE IF NOT EXISTS product_variant_value (
+                    variant_id INT(10) UNSIGNED NOT NULL,
+                    option_value_id INT(10) UNSIGNED NOT NULL,
+                    PRIMARY KEY (variant_id, option_value_id),
+                    KEY fk_pvv_option_value (option_value_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+
+            // Vérifier s'il y a déjà des options, sinon insérer le jeu d'essai
             $count = (int) $this->pdo->query("SELECT COUNT(*) FROM product_option")->fetchColumn();
             if ($count === 0) {
                 $this->pdo->exec("
@@ -740,7 +852,8 @@ final class ProductModel
                     (5, 2, 'Type de lait', 'radio', 1, 1),
                     (6, 6, 'Parfum', 'radio', 1, 0),
                     (7, 6, 'Chantilly', 'radio', 1, 1),
-                    (8, 8, 'Taille', 'radio', 1, 0);
+                    (8, 8, 'Taille', 'radio', 1, 0),
+                    (9, 8, 'Touche de fraîcheur', 'radio', 1, 1);
 
                     INSERT INTO product_option_value (id, option_id, nom, surcout, ordre) VALUES
                     (1, 1, 'Simple (Tasse)', 0.00, 0),
@@ -751,17 +864,97 @@ final class ProductModel
                     (6, 3, 'Sans sirop', 0.00, 0),
                     (7, 3, 'Sirop Vanille', 0.50, 1),
                     (8, 3, 'Sirop Caramel beurre salé', 0.50, 2),
-                    (9, 4, 'Moyen (35 cl)', 0.00, 0),
-                    (10, 4, 'Grand (50 cl)', 0.90, 1),
-                    (11, 5, 'Lait entier', 0.00, 0),
-                    (12, 5, 'Lait d\'avoine', 0.50, 1),
-                    (13, 6, 'Vanille Bourbon', 0.00, 0),
-                    (14, 6, 'Chocolat intense', 0.00, 1),
-                    (15, 6, 'Fraise mara des bois', 0.00, 2),
-                    (16, 7, 'Sans chantilly', 0.00, 0),
-                    (17, 7, 'Avec chantilly maison', 0.60, 1),
-                    (18, 8, 'Verre (33 cl)', 0.00, 0),
-                    (19, 8, 'Bouteille (50 cl)', 1.20, 1);
+                    (9, 3, 'Sirop Noisette grillée', 0.50, 3),
+                    (10, 4, 'Moyen (35 cl)', 0.00, 0),
+                    (11, 4, 'Grand (50 cl)', 0.90, 1),
+                    (12, 5, 'Lait entier', 0.00, 0),
+                    (13, 5, 'Lait d\'avoine', 0.50, 1),
+                    (14, 5, 'Lait de soja', 0.50, 2),
+                    (15, 6, 'Vanille Bourbon', 0.00, 0),
+                    (16, 6, 'Chocolat intense', 0.00, 1),
+                    (17, 6, 'Fraise mara des bois', 0.00, 2),
+                    (18, 6, 'Caramel beurre salé', 0.50, 3),
+                    (19, 7, 'Sans chantilly', 0.00, 0),
+                    (20, 7, 'Avec chantilly maison', 0.60, 1),
+                    (21, 8, 'Verre (33 cl)', 0.00, 0),
+                    (22, 8, 'Bouteille (50 cl)', 1.20, 1),
+                    (23, 9, 'Classique nature', 0.00, 0),
+                    (24, 9, 'Feuilles de menthe fraîche', 0.40, 1),
+                    (25, 9, 'Gingembre pressé', 0.50, 2);
+                ");
+            }
+
+            // OPT-b : Initialisation des variantes et stocks par combinaison
+            $countVarVal = (int) $this->pdo->query("SELECT COUNT(*) FROM product_variant_value")->fetchColumn();
+            if ($countVarVal === 0) {
+                $this->pdo->exec("
+                    INSERT INTO product_variant (id, product_id, nom, prix, stock, seuil_alerte, actif) VALUES
+                    -- Chaï latte (ID: 2)
+                    (1, 2, 'Moyen (35 cl), Lait entier', 4.50, 15, 5, 1),
+                    (2, 2, 'Moyen (35 cl), Lait d\'avoine', 5.00, 8, 5, 1),
+                    (3, 2, 'Moyen (35 cl), Lait de soja', 5.00, 0, 5, 1),
+                    (4, 2, 'Grand (50 cl), Lait entier', 5.40, 4, 5, 1),
+                    (5, 2, 'Grand (50 cl), Lait d\'avoine', 5.90, 2, 5, 1),
+                    (6, 2, 'Grand (50 cl), Lait de soja', 5.90, 0, 5, 1),
+                    -- Citronnade maison (ID: 8) (Bouteille + Gingembre inexistante)
+                    (7, 8, 'Verre (33 cl), Classique nature', 3.50, 12, 5, 1),
+                    (8, 8, 'Verre (33 cl), Feuilles de menthe fraîche', 3.90, 10, 5, 1),
+                    (9, 8, 'Verre (33 cl), Gingembre pressé', 4.00, 0, 5, 1),
+                    (10, 8, 'Bouteille (50 cl), Classique nature', 4.70, 8, 5, 1),
+                    (11, 8, 'Bouteille (50 cl), Feuilles de menthe fraîche', 5.10, 3, 5, 1),
+                    -- Milkshake (ID: 6)
+                    (12, 6, 'Vanille Bourbon, Sans chantilly', 5.00, 10, 5, 1),
+                    (13, 6, 'Vanille Bourbon, Avec chantilly maison', 5.60, 4, 5, 1),
+                    (14, 6, 'Chocolat intense, Sans chantilly', 5.00, 6, 5, 1),
+                    (15, 6, 'Chocolat intense, Avec chantilly maison', 5.60, 0, 5, 1),
+                    (16, 6, 'Fraise mara des bois, Sans chantilly', 5.00, 5, 5, 1),
+                    (17, 6, 'Fraise mara des bois, Avec chantilly maison', 5.60, 2, 5, 1),
+                    (18, 6, 'Caramel beurre salé, Sans chantilly', 5.50, 0, 5, 1),
+                    (19, 6, 'Caramel beurre salé, Avec chantilly maison', 6.10, 3, 5, 1),
+                    -- Café noisette (ID: 1)
+                    (20, 1, 'Simple (Tasse), Lait entier, Sans sirop', 2.50, 25, 5, 1),
+                    (21, 1, 'Simple (Tasse), Lait d\'avoine bio, Sans sirop', 3.00, 10, 5, 1),
+                    (22, 1, 'Simple (Tasse), Lait d\'amande, Sans sirop', 3.00, 6, 5, 1),
+                    (23, 1, 'Simple (Tasse), Lait entier, Sirop Vanille', 3.00, 8, 5, 1),
+                    (24, 1, 'Simple (Tasse), Lait entier, Sirop Caramel', 3.00, 3, 5, 1),
+                    (25, 1, 'Simple (Tasse), Lait entier, Sirop Noisette', 3.00, 0, 5, 1),
+                    (26, 1, 'Double, Lait entier, Sans sirop', 3.10, 15, 5, 1),
+                    (27, 1, 'Double, Lait d\'avoine bio, Sans sirop', 3.60, 4, 5, 1),
+                    (28, 1, 'Double, Lait d\'amande, Sans sirop', 3.60, 0, 5, 1),
+                    (29, 1, 'Double, Lait entier, Sirop Caramel', 3.60, 2, 5, 1)
+                    ON DUPLICATE KEY UPDATE nom = VALUES(nom), prix = VALUES(prix), stock = VALUES(stock), seuil_alerte = VALUES(seuil_alerte);
+
+                    INSERT INTO product_variant_value (variant_id, option_value_id) VALUES
+                    (1, 10), (1, 12),
+                    (2, 10), (2, 13),
+                    (3, 10), (3, 14),
+                    (4, 11), (4, 12),
+                    (5, 11), (5, 13),
+                    (6, 11), (6, 14),
+                    (7, 21), (7, 23),
+                    (8, 21), (8, 24),
+                    (9, 21), (9, 25),
+                    (10, 22), (10, 23),
+                    (11, 22), (11, 24),
+                    (12, 15), (12, 19),
+                    (13, 15), (13, 20),
+                    (14, 16), (14, 19),
+                    (15, 16), (15, 20),
+                    (16, 17), (16, 19),
+                    (17, 17), (17, 20),
+                    (18, 18), (18, 19),
+                    (19, 18), (19, 20),
+                    (20, 1), (20, 3), (20, 6),
+                    (21, 1), (21, 4), (21, 6),
+                    (22, 1), (22, 5), (22, 6),
+                    (23, 1), (23, 3), (23, 7),
+                    (24, 1), (24, 3), (24, 8),
+                    (25, 1), (25, 3), (25, 9),
+                    (26, 2), (26, 3), (26, 6),
+                    (27, 2), (27, 4), (27, 6),
+                    (28, 2), (28, 5), (28, 6),
+                    (29, 2), (29, 3), (29, 8)
+                    ON DUPLICATE KEY UPDATE option_value_id = VALUES(option_value_id);
                 ");
             }
         } catch (Throwable) {
@@ -996,5 +1189,221 @@ final class ProductModel
                 $stmtSupprOpt->execute(['id' => $exOptId, 'product_id' => $productId]);
             }
         }
+
+        // Génération automatique des combinaisons de variantes correspondantes
+        $this->genererVariantesDepuisOptions($productId);
+    }
+
+    /**
+     * Calcule le produit cartésien d'une liste de groupes de valeurs (sans foreach).
+     *
+     * @param array<int, array<int, array{id: int, nom: string, surcout: float|int|string}>> $groupes
+     * @return array<int, array<int, array{id: int, nom: string, surcout: float|int|string}>>
+     */
+    private function calculerProduitCartesien(array $groupes): array
+    {
+        if (empty($groupes)) {
+            return [];
+        }
+
+        $combinaisons = [[]];
+        $nbGroupes = count($groupes);
+
+        for ($g = 0; $g < $nbGroupes; $g++) {
+            $groupe = $groupes[$g];
+            $nouvelles = [];
+            $nbComb = count($combinaisons);
+            $nbVals = count($groupe);
+
+            for ($c = 0; $c < $nbComb; $c++) {
+                $base = $combinaisons[$c];
+                for ($v = 0; $v < $nbVals; $v++) {
+                    $copie = $base;
+                    $copie[] = $groupe[$v];
+                    $nouvelles[] = $copie;
+                }
+            }
+
+            $combinaisons = $nouvelles;
+        }
+
+        return $combinaisons;
+    }
+
+    /**
+     * Génère automatiquement toutes les combinaisons de variantes (produit cartésien)
+     * à partir des options configurées pour un produit, en préservant les stocks existants.
+     *
+     * @param int $productId
+     * @return array<int, array{id: int, product_id: int, nom: string, prix: float, stock: int, seuil_alerte: int, actif: int, valeur_ids?: array<int, int>}>
+     */
+    public function genererVariantesDepuisOptions(int $productId): array
+    {
+        $this->initialiserTablesOptions();
+
+        $stmtProd = $this->pdo->prepare('SELECT id, nom, prix, stock, seuil_alerte FROM product WHERE id = :id');
+        $stmtProd->execute(['id' => $productId]);
+        $produit = $stmtProd->fetch(PDO::FETCH_ASSOC);
+
+        if (!$produit) {
+            return [];
+        }
+
+        $prixBase = (float) $produit['prix'];
+        $stockBase = (int) ($produit['stock'] ?? 0);
+        $seuilAlerte = (int) ($produit['seuil_alerte'] ?? 5);
+
+        // Récupérer les options et leurs valeurs ordonnées
+        $stmtOpts = $this->pdo->prepare(
+            'SELECT id, nom, obligatoire
+               FROM product_option
+              WHERE product_id = :product_id
+              ORDER BY ordre ASC, id ASC'
+        );
+        $stmtOpts->execute(['product_id' => $productId]);
+        $options = $stmtOpts->fetchAll(PDO::FETCH_ASSOC);
+
+        $nbOptions = count($options);
+        if ($nbOptions === 0) {
+            return [];
+        }
+
+        $stmtVals = $this->pdo->prepare(
+            'SELECT id, nom, surcout
+               FROM product_option_value
+              WHERE option_id = :option_id
+              ORDER BY ordre ASC, id ASC'
+        );
+
+        $groupesValeurs = [];
+        for ($i = 0; $i < $nbOptions; $i++) {
+            $opt = $options[$i];
+            $stmtVals->execute(['option_id' => (int) $opt['id']]);
+            $vals = $stmtVals->fetchAll(PDO::FETCH_ASSOC);
+            if (!empty($vals)) {
+                $groupesValeurs[] = $vals;
+            }
+        }
+
+        if (empty($groupesValeurs)) {
+            return [];
+        }
+
+        // Calcul de toutes les combinaisons cartésiennes
+        $combinaisons = $this->calculerProduitCartesien($groupesValeurs);
+        $nbCombinaisons = count($combinaisons);
+
+        if ($nbCombinaisons === 0) {
+            return [];
+        }
+
+        // Indexation des variantes existantes du produit par combinaison de valeur_ids
+        $stmtExistantes = $this->pdo->prepare(
+            'SELECT id, nom, prix, stock, seuil_alerte, actif
+               FROM product_variant
+              WHERE product_id = :product_id'
+        );
+        $stmtExistantes->execute(['product_id' => $productId]);
+        $existantes = $stmtExistantes->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmtVarVals = $this->pdo->prepare(
+            'SELECT option_value_id
+               FROM product_variant_value
+              WHERE variant_id = :variant_id
+              ORDER BY option_value_id ASC'
+        );
+
+        $existantesParCle = [];
+        $nbExistantes = count($existantes);
+
+        for ($e = 0; $e < $nbExistantes; $e++) {
+            $varRow = $existantes[$e];
+            $stmtVarVals->execute(['variant_id' => (int) $varRow['id']]);
+            $vVals = $stmtVarVals->fetchAll(PDO::FETCH_COLUMN);
+            $vValsInt = array_map('intval', $vVals);
+            sort($vValsInt);
+            $cle = implode('_', $vValsInt);
+            $existantesParCle[$cle] = $varRow;
+        }
+
+        $stmtInsertVar = $this->pdo->prepare(
+            'INSERT INTO product_variant (product_id, nom, prix, stock, seuil_alerte, actif)
+             VALUES (:product_id, :nom, :prix, :stock, :seuil_alerte, 1)'
+        );
+
+        $stmtUpdateVar = $this->pdo->prepare(
+            'UPDATE product_variant
+                SET nom = :nom, prix = :prix, actif = 1
+              WHERE id = :id'
+        );
+
+        $stmtInsertVarVal = $this->pdo->prepare(
+            'INSERT IGNORE INTO product_variant_value (variant_id, option_value_id)
+             VALUES (:variant_id, :option_value_id)'
+        );
+
+        $idsVariantesConservees = [];
+
+        for ($k = 0; $k < $nbCombinaisons; $k++) {
+            $comb = $combinaisons[$k];
+
+            $valIds = array_map(static function (array $val): int {
+                return (int) $val['id'];
+            }, $comb);
+            sort($valIds);
+            $cle = implode('_', $valIds);
+
+            $noms = array_map(static function (array $val): string {
+                return (string) $val['nom'];
+            }, $comb);
+            $nomVariante = implode(', ', $noms);
+
+            $surcoutTotal = 0.0;
+            $nbValsComb = count($comb);
+            for ($vc = 0; $vc < $nbValsComb; $vc++) {
+                $surcoutTotal += (float) ($comb[$vc]['surcout'] ?? 0.0);
+            }
+            $prixVariante = round($prixBase + $surcoutTotal, 2);
+
+            if (isset($existantesParCle[$cle])) {
+                // Variante existante : préserver le stock actuel et réactiver si nécessaire
+                $varId = (int) $existantesParCle[$cle]['id'];
+                $stmtUpdateVar->execute([
+                    'nom'  => $nomVariante,
+                    'prix' => $prixVariante,
+                    'id'   => $varId,
+                ]);
+                $idsVariantesConservees[] = $varId;
+            } else {
+                // Nouvelle combinaison : insertion dans product_variant
+                $stmtInsertVar->execute([
+                    'product_id'   => $productId,
+                    'nom'          => $nomVariante,
+                    'prix'         => $prixVariante,
+                    'stock'        => $stockBase,
+                    'seuil_alerte' => $seuilAlerte,
+                ]);
+                $varId = (int) $this->pdo->lastInsertId();
+
+                $nbV = count($valIds);
+                for ($v = 0; $v < $nbV; $v++) {
+                    $stmtInsertVarVal->execute([
+                        'variant_id'      => $varId,
+                        'option_value_id' => $valIds[$v],
+                    ]);
+                }
+                $idsVariantesConservees[] = $varId;
+            }
+        }
+
+        // Marquer inactives les anciennes variantes obsolètes qui ne correspondent plus aux options
+        for ($e = 0; $e < $nbExistantes; $e++) {
+            $exId = (int) $existantes[$e]['id'];
+            if (!in_array($exId, $idsVariantesConservees, true)) {
+                $this->pdo->prepare('UPDATE product_variant SET actif = 0 WHERE id = :id')->execute(['id' => $exId]);
+            }
+        }
+
+        return $this->listerVariantes($productId);
     }
 }
