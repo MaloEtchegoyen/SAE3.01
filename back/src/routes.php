@@ -23,6 +23,9 @@ return [
     'POST /api/login'          => [AuthController::class,      'login'],
     'POST /api/logout'         => [AuthController::class,      'logout'],
     'GET  /api/me'             => [AuthController::class,      'me'],
+    'GET  /api/user/profile'   => [AuthController::class,      'profil'],
+    'PUT  /api/user/profile'   => [AuthController::class,      'modifierProfil'],
+    'PUT  /api/user/password'  => [AuthController::class,      'modifierMotDePasse'],
     'GET  /api/admin/stats'    => [StatsController::class,     'index'],
 
     // Commandes (Clients connectés)
