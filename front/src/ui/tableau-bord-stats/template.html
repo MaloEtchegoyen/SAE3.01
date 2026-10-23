@@ -1,0 +1,117 @@
+<div class="w-full flex flex-col gap-6 sm:gap-8">
+  <!-- Section Revenus des 7 derniers jours -->
+  <section class="flex flex-col">
+    <h2 class="text-body-sm sm:text-body font-semibold text-content-secondary">
+      Revenus des 7 derniers jours
+    </h2>
+    <div class="text-4xl sm:text-5xl font-extrabold tracking-tight text-content-primary mt-1">
+      {{revenus7JoursFormate}}
+    </div>
+  </section>
+
+  <!-- Carte 1 : Histogramme des stocks par produit -->
+  <section class="bg-brand text-white rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col">
+    <h2 class="text-title-sm font-bold text-white mb-4 sm:mb-6">
+      Stocks par produit
+    </h2>
+    <div
+      data-ref="histogramme"
+      class="flex items-end justify-start sm:justify-around gap-2 sm:gap-4 h-48 sm:h-56 pt-6 pb-2 overflow-x-auto min-w-0 scrollbar-thin"
+    >
+      <!-- Les barres d'histogramme sont injectées dynamiquement par la vue -->
+    </div>
+  </section>
+
+  <!-- Carte 2 : Statuts des commandes -->
+  <section class="bg-brand text-white rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col">
+    <h2 class="text-title-sm font-bold text-white mb-4">
+      Statuts des commandes
+    </h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <!-- En cours -->
+      <div class="bg-sand-500 rounded-xl p-3.5 sm:p-4 text-white shadow-xs flex flex-col justify-between">
+        <div class="text-2xl sm:text-3xl font-bold leading-none text-white">
+          {{statutEnCours}}
+        </div>
+        <div class="text-caption sm:text-body-sm font-medium mt-1 text-white/95">
+          En cours
+        </div>
+      </div>
+
+      <!-- Disponible -->
+      <div class="bg-sand-500 rounded-xl p-3.5 sm:p-4 text-white shadow-xs flex flex-col justify-between">
+        <div class="text-2xl sm:text-3xl font-bold leading-none text-white">
+          {{statutDisponible}}
+        </div>
+        <div class="text-caption sm:text-body-sm font-medium mt-1 text-white/95">
+          Disponible
+        </div>
+      </div>
+
+      <!-- Retirée -->
+      <div class="bg-sand-500 rounded-xl p-3.5 sm:p-4 text-white shadow-xs flex flex-col justify-between">
+        <div class="text-2xl sm:text-3xl font-bold leading-none text-white">
+          {{statutRetiree}}
+        </div>
+        <div class="text-caption sm:text-body-sm font-medium mt-1 text-white/95">
+          Retirée
+        </div>
+      </div>
+
+      <!-- Annulée -->
+      <div class="bg-sand-500 rounded-xl p-3.5 sm:p-4 text-white shadow-xs flex flex-col justify-between">
+        <div class="text-2xl sm:text-3xl font-bold leading-none text-white">
+          {{statutAnnulee}}
+        </div>
+        <div class="text-caption sm:text-body-sm font-medium mt-1 text-white/95">
+          Annulée
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grille 3 : Top ventes & Alertes stocks faibles (mobile-first 1 col, 2 col sur desktop) -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Top ventes 7 derniers jours -->
+    <section class="bg-brand text-white rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col">
+      <h2 class="text-title-sm font-bold text-white mb-4">
+        Top ventes &middot; 7 derniers jours
+      </h2>
+      <div class="bg-black/20 rounded-xl overflow-hidden flex-1">
+        <table class="w-full text-left text-body-sm border-collapse">
+          <thead>
+            <tr class="border-b border-white/10 text-caption font-semibold text-white/70">
+              <th scope="col" class="py-2.5 px-4">Produit</th>
+              <th scope="col" class="py-2.5 px-4 text-right">Unités vendues</th>
+            </tr>
+          </thead>
+          <tbody data-ref="top-ventes-body">
+            <!-- Injecté dynamiquement par la vue -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Alertes de stock faible -->
+    <section class="bg-brand text-white rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col">
+      <h2 class="text-title-sm font-bold text-white mb-4">
+        Alertes de stock faible
+      </h2>
+      <div class="bg-black/20 rounded-xl overflow-hidden flex-1">
+        <table class="w-full text-left text-body-sm border-collapse">
+          <thead>
+            <tr class="border-b border-white/10 text-caption font-semibold text-white/70">
+              <th scope="col" class="py-2.5 px-4">Produit / option</th>
+              <th scope="col" class="py-2.5 px-4 text-center">Stock</th>
+              <th scope="col" class="py-2.5 px-4 text-right">Seuil</th>
+            </tr>
+          </thead>
+          <tbody data-ref="alertes-stock-body">
+            <!-- Injecté dynamiquement par la vue -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+

@@ -5,24 +5,18 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\Response;
-use App\Model\OrderModel;
-use App\Model\ProductModel;
+use App\Model\StatsModel;
 
 /**
- * Statistiques d'administration, réservées aux administrateurs.
+ * Statistiques d'administration (PIL-a), réservées aux administrateurs.
  */
 final class StatsController
 {
-    /** Le modèle qui interroge la base pour les produits. */
-    private ProductModel $produits;
+    private StatsModel $stats;
 
-    /** Le modèle qui interroge la base pour les commandes. */
-    private ?OrderModel $commandes;
-
-    public function __construct(ProductModel $produits, ?OrderModel $commandes = null)
+    public function __construct(StatsModel $stats)
     {
-        $this->produits = $produits;
-        $this->commandes = $commandes;
+        $this->stats = $stats;
     }
 
     /**
@@ -35,9 +29,12 @@ final class StatsController
             Response::erreur('Accès réservé aux administrateurs', 403);
         }
 
-        $stats = $this->produits->statistiques();
-        $stats['totalCommandes'] = $this->commandes !== null ? $this->commandes->compterTotal() : 0;
+        // Empêche toute mise en cache navigateur pour garantir des données en direct
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
 
-        Response::json($stats);
+        $donnees = $this->stats->obtenirTableauDeBord();
+
+        Response::json($donnees);
     }
 }
