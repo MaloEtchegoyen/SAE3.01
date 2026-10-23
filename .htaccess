@@ -37,3 +37,14 @@ RewriteRule ^front/dist/ front/dist/index.html [END]
 #    jamais servies : /front/src/main.js devient front/dist/front/src/main.js,
 #    qui n'existe pas.
 RewriteRule ^(.*)$ front/dist/$1 [L]
+
+# --- Gestion du cache navigateur pour la Single Page Application ---
+# Empêche la mise en cache de index.html afin que les utilisateurs reçoivent
+# immédiatement les nouvelles versions du bundle JavaScript après déploiement.
+<IfModule mod_headers.c>
+    <Files "index.html">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </IfModule>
+</IfModule>
