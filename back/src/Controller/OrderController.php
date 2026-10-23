@@ -52,10 +52,35 @@ final class OrderController
     }
 
     /**
-     * Récupère le détail d'une commande par son numéro : GET /api/orders/detail
+     * Vérifie la disponibilité et prépare la réutilisation d'une commande : POST /api/orders/reorder
      *
      * @param Request $requete
      */
+    public function reorder(Request $requete): void
+    {
+        if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
+            Response::erreur('Vous devez être connecté pour réutiliser une commande.', 401);
+            return;
+        }
+
+        $corps = $requete->corps();
+        $id = (int) ($corps['id'] ?? $requete->parametre('id') ?? 0);
+        $numero = trim((string) ($corps['numero'] ?? $requete->parametre('numero') ?? ''));
+
+        if ($id <= 0 && $numero === '') {
+            Response::erreur('Identifiant ou numéro de commande manquant.', 400);
+            return;
+        }
+
+        $utilisateurId = (int) $_SESSION['id'];
+
+        try {
+            $resultat = $this->orders->preparerRecommande($utilisateurId, $id, $numero);
+            Response::json($resultat);
+        } catch (Throwable $e) {
+            Response::erreur($e->getMessage(), 400);
+        }
+    }
 
     /**
      * Liste les commandes récentes de l'utilisateur connecté : GET /api/orders
@@ -86,6 +111,12 @@ final class OrderController
 
         Response::json($resultat);
     }
+
+    /**
+     * Récupère le détail d'une commande par son numéro : GET /api/orders/detail
+     *
+     * @param Request $requete
+     */
     public function detail(Request $requete): void
     {
         if (empty($_SESSION['utilisateur']) || empty($_SESSION['id'])) {
