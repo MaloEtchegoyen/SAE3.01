@@ -23,7 +23,15 @@ C.handler_connexion = async function (login, mdp) {
   M.login = login;
 
   try {
-    await AuthData.login(login, mdp);
+    let reponse = await AuthData.login(login, mdp);
+    if (reponse.role !== "admin") {
+      M.message = {
+        type: "admin-erreur",
+        texte: "Ce compte n'a pas les droits d'administration.",
+      };
+      V.rafraichir();
+      return;
+    }
     navigate("/admin");
   } catch (erreur) {
     M.message = {
