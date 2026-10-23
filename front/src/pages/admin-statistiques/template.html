@@ -1,0 +1,38 @@
+<section class="mx-auto w-full max-w-5xl min-w-0 px-4 pt-6 pb-12 sm:px-6 md:px-8">
+  <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <h1 class="text-title-md sm:text-title-lg font-bold tracking-tight text-sand-600">
+      Statistiques
+    </h1>
+
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+      <button
+        type="button"
+        data-action="rafraichir-stats"
+        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-content-secondary text-body-sm font-medium transition-colors shadow-xs cursor-pointer"
+        title="Actualiser les données en temps réel"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>Actualiser</span>
+      </button>
+
+      <button
+        type="button"
+        data-action="exporter-stats"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-input hover:bg-input-hover text-white text-body-sm font-medium transition-colors shadow-xs cursor-pointer"
+        title="Télécharger l'export statistique au format CSV"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Exporter (CSV)</span>
+      </button>
+    </div>
+  </div>
+
+  <slot name="message"></slot>
+
+  <slot name="statistiques"></slot>
+</section>
+

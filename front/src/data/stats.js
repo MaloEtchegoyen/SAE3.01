@@ -3,13 +3,53 @@ import { getRequest } from "../lib/api-request.js";
 let StatsData = {};
 
 /**
- * Statistiques du catalogue et de l'activité : GET /api/admin/stats, réservé aux
- * administrateurs (401 sans connexion, 403 sans le rôle admin).
+ * @typedef {Object} StatutsCommandes
+ * @property {number} en_cours
+ * @property {number} disponible
+ * @property {number} retiree
+ * @property {number} annulee
+ */
+
+/**
+ * @typedef {Object} ProduitStock
+ * @property {number} id
+ * @property {string} nom
+ * @property {number} stock
+ */
+
+/**
+ * @typedef {Object} TopVente
+ * @property {string} nom
+ * @property {number} quantite
+ */
+
+/**
+ * @typedef {Object} AlerteStock
+ * @property {string} nom
+ * @property {number} stock
+ * @property {number} seuil
+ */
+
+/**
+ * @typedef {Object} StatsDashboard
+ * @property {number} revenus7Jours
+ * @property {number} totalCommandes
+ * @property {StatutsCommandes} statutsCommandes
+ * @property {ProduitStock[]} stocksParProduit
+ * @property {TopVente[]} topVentes
+ * @property {AlerteStock[]} alertesStock
+ * @property {number} [totalProduits]
+ * @property {number} [totalCategories]
+ */
+
+/**
+ * Récupère les statistiques d'administration en temps réel (PIL-a) :
+ * GET /api/admin/stats (réservé aux administrateurs).
  *
- * @returns {Promise<{ totalProduits: number, totalCategories: number, totalCommandes: number }>}
+ * @returns {Promise<StatsDashboard>}
  */
 StatsData.fetch = async function () {
-  return getRequest("admin/stats");
+  return getRequest(`admin/stats?_t=${Date.now()}`);
 };
 
 export { StatsData };

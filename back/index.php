@@ -24,6 +24,7 @@ use App\Controller\CategoryController;
 use App\Model\CategoryModel;
 use App\Model\OrderModel;
 use App\Model\ProductModel;
+use App\Model\StatsModel;
 use App\Model\UserModel;
 
 // --- Chargement automatique des classes ------------------------------------
@@ -66,7 +67,7 @@ try {
     // le contrôleur reçoit le modèle. Aucune magie, tout est lisible ici.
     $controleurs = [
         AuthController::class      => new AuthController(new UserModel($pdo)),
-        StatsController::class     => new StatsController(new ProductModel($pdo), new OrderModel($pdo)),
+        StatsController::class     => new StatsController(new StatsModel($pdo)),
         ProductController::class   => new ProductController(new ProductModel($pdo)),
         OrderController::class     => new OrderController(new OrderModel($pdo)),
         CategoryController::class  => new CategoryController(new CategoryModel($pdo)),
