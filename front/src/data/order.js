@@ -26,6 +26,29 @@ let OrderData = {
   },
 
   /**
+   * Vérifie la disponibilité des articles d'une commande passée et prépare la réutilisation (SUI-a).
+   *
+   * @param {number|string} idOuNumero
+   * @returns {Promise<{
+   *   succes: boolean,
+   *   commande_id: number,
+   *   numero_commande: string,
+   *   articles_a_ajouter: Array<object>,
+   *   articles_indisponibles: Array<object>,
+   *   articles_ajustes: Array<object>,
+   *   articles_prix_modifies: Array<object>
+   * }>}
+   */
+  async preparerRecommande(idOuNumero) {
+    let corps =
+      typeof idOuNumero === "number"
+        ? { id: idOuNumero }
+        : { numero: String(idOuNumero) };
+    let reponse = await postRequest("orders/reorder", corps);
+    return reponse;
+  },
+
+  /**
    * Récupère le détail d'une commande par son numéro unique (côté client).
    *
    * @param {string} numeroCommande

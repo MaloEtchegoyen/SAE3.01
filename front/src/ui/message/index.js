@@ -6,6 +6,8 @@ import template from "./template.html?raw";
 const COULEURS = {
   erreur: "border-red-700 text-red-700 dark:border-red-400 dark:text-red-400",
   succes: "border-green-700 text-green-700 dark:border-green-400 dark:text-green-400",
+  avertissement: "border-amber-600 text-amber-700 dark:border-amber-400 dark:text-amber-400",
+  info: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-400",
 };
 
 // Message d'information ou d'erreur. data vaut { type: "erreur" | "succes",
@@ -15,7 +17,7 @@ let MessageView = {
     if (data === null) {
       return "";
     }
-    return genericRenderer(template, { texte: data.texte, couleurs: COULEURS[data.type] });
+    return genericRenderer(template, { texte: data.texte, couleurs: COULEURS[data.type] || COULEURS.info });
   },
 
   dom: function (data) {

@@ -1016,4 +1016,270 @@ final class OrderModel
             'erreurs'  => $erreurs,
         ];
     }
+
+    /**
+     * Vérifie la disponibilité des articles d'une commande passée et prépare leur réutilisation dans le panier (SUI-a).
+     * Gère les produits supprimés, désactivés, les variantes, les ruptures de stock, les stocks partiels et les changements de prix.
+     *
+     * @param int $utilisateurId
+     * @param int $commandeId
+     * @param string $numeroCommande
+     * @return array{
+     *     succes: bool,
+     *     commande_id: int,
+     *     numero_commande: string,
+     *     articles_a_ajouter: array<int, mixed>,
+     *     articles_indisponibles: array<int, mixed>,
+     *     articles_ajustes: array<int, mixed>,
+     *     articles_prix_modifies: array<int, mixed>
+     * }
+     * @throws Exception
+     */
+    public function preparerRecommande(int $utilisateurId, int $commandeId = 0, string $numeroCommande = ''): array
+    {
+        $sql = 'SELECT id, numero_commande, utilisateur_id FROM commande WHERE ';
+        $params = ['utilisateur_id' => $utilisateurId];
+
+        if ($commandeId > 0) {
+            $sql .= 'id = :id AND utilisateur_id = :utilisateur_id';
+            $params['id'] = $commandeId;
+        } elseif ($numeroCommande !== '') {
+            $sql .= 'numero_commande = :numero AND utilisateur_id = :utilisateur_id';
+            $params['numero'] = $numeroCommande;
+        } else {
+            throw new Exception('Identifiant ou numéro de commande manquant.');
+        }
+
+        $stmtCmd = $this->pdo->prepare($sql);
+        $stmtCmd->execute($params);
+        $cmd = $stmtCmd->fetch();
+
+        if (!$cmd) {
+            throw new Exception('Commande introuvable ou vous n\'avez pas accès à celle-ci.');
+        }
+
+        $cmdId = (int) $cmd['id'];
+        $numCommande = (string) $cmd['numero_commande'];
+
+        $stmtLignes = $this->pdo->prepare(
+            'SELECT id, product_id, variant_id, nom_produit, nom_variante, quantite, prix_unitaire
+               FROM ligne_commande
+              WHERE commande_id = :commande_id
+           ORDER BY id ASC'
+        );
+        $stmtLignes->execute(['commande_id' => $cmdId]);
+        $lignes = $stmtLignes->fetchAll();
+
+        $articlesAAjouter = [];
+        $articlesIndisponibles = [];
+        $articlesAjustes = [];
+        $articlesPrixModifies = [];
+
+        $stmtProd = $this->pdo->prepare('SELECT id, nom, prix, stock, actif, slug FROM product WHERE id = :id');
+        $stmtVar = $this->pdo->prepare('SELECT id, product_id, nom, prix, stock, actif FROM product_variant WHERE id = :id AND product_id = :product_id');
+        $stmtVarByName = $this->pdo->prepare('SELECT id, product_id, nom, prix, stock, actif FROM product_variant WHERE product_id = :product_id AND nom = :nom AND actif = 1 LIMIT 1');
+        $stmtImg = $this->pdo->prepare('SELECT url FROM product_image WHERE product_id = :id ORDER BY est_principale DESC, ordre ASC, id ASC LIMIT 1');
+        $stmtOptValues = $this->pdo->prepare(
+            'SELECT pov.id AS valeurId, pov.nom AS valeurNom, pov.surcout, po.id AS optionId, po.nom AS optionNom
+               FROM product_variant_value pvv
+               JOIN product_option_value pov ON pov.id = pvv.option_value_id
+               JOIN product_option po ON po.id = pov.option_id
+              WHERE pvv.variant_id = :vid
+           ORDER BY po.ordre ASC, pov.ordre ASC'
+        );
+
+        $nbLignes = count($lignes);
+        for ($i = 0; $i < $nbLignes; $i++) {
+            $ligne = $lignes[$i];
+            $prodId = (int) $ligne['product_id'];
+            $nomProdHistorique = (string) $ligne['nom_produit'];
+            $nomVarHistorique = $ligne['nom_variante'] !== null ? (string) $ligne['nom_variante'] : null;
+            $qteHistorique = (int) $ligne['quantite'];
+            $prixUnitaireHistorique = (float) $ligne['prix_unitaire'];
+            $varId = $ligne['variant_id'] !== null ? (int) $ligne['variant_id'] : null;
+
+            // 1. Vérification du produit
+            $stmtProd->execute(['id' => $prodId]);
+            $prod = $stmtProd->fetch();
+
+            if (!$prod || (int) $prod['actif'] !== 1) {
+                $articlesIndisponibles[] = [
+                    'nom_produit'  => $nomProdHistorique,
+                    'nom_variante' => $nomVarHistorique,
+                    'quantite'     => $qteHistorique,
+                    'motif'        => 'Ce produit n\'est plus proposé au catalogue.',
+                ];
+                continue;
+            }
+
+            // Image actuelle
+            $stmtImg->execute(['id' => $prodId]);
+            $imgRow = $stmtImg->fetch();
+            $imageUrl = $imgRow ? (string) $imgRow['url'] : null;
+
+            // 2. Gestion si variante demandée ou enregistrée
+            $varianteTrouvee = null;
+            if ($varId !== null) {
+                $stmtVar->execute(['id' => $varId, 'product_id' => $prodId]);
+                $varRow = $stmtVar->fetch();
+                if ($varRow && (int) $varRow['actif'] === 1) {
+                    $varianteTrouvee = $varRow;
+                } elseif ($nomVarHistorique !== null) {
+                    // Repli par nom si la variante a été recréée
+                    $stmtVarByName->execute(['product_id' => $prodId, 'nom' => $nomVarHistorique]);
+                    $varParNom = $stmtVarByName->fetch();
+                    if ($varParNom) {
+                        $varianteTrouvee = $varParNom;
+                    }
+                }
+
+                if (!$varianteTrouvee) {
+                    $articlesIndisponibles[] = [
+                        'nom_produit'  => (string) $prod['nom'],
+                        'nom_variante' => $nomVarHistorique,
+                        'quantite'     => $qteHistorique,
+                        'motif'        => 'L\'option « ' . ($nomVarHistorique ?? 'sélectionnée') . ' » n\'est plus disponible.',
+                    ];
+                    continue;
+                }
+            } elseif ($nomVarHistorique !== null && $nomVarHistorique !== '') {
+                // Recherche par nom si aucune varianteId n'était figée
+                $stmtVarByName->execute(['product_id' => $prodId, 'nom' => $nomVarHistorique]);
+                $varParNom = $stmtVarByName->fetch();
+                if ($varParNom) {
+                    $varianteTrouvee = $varParNom;
+                }
+            }
+
+            // 3. Calcul de stock et de prix
+            if ($varianteTrouvee !== null) {
+                $stockDispo = (int) $varianteTrouvee['stock'];
+                $prixActuel = (float) $varianteTrouvee['prix'];
+                $nomVarianteActuel = (string) $varianteTrouvee['nom'];
+                $varianteIdActuel = (int) $varianteTrouvee['id'];
+
+                if ($stockDispo <= 0) {
+                    $articlesIndisponibles[] = [
+                        'nom_produit'  => (string) $prod['nom'],
+                        'nom_variante' => $nomVarianteActuel,
+                        'quantite'     => $qteHistorique,
+                        'motif'        => 'Rupture de stock pour l\'option « ' . $nomVarianteActuel . ' ».',
+                    ];
+                    continue;
+                }
+
+                $qteAjoutee = min($qteHistorique, $stockDispo);
+                if ($qteAjoutee < $qteHistorique) {
+                    $articlesAjustes[] = [
+                        'nom'               => (string) $prod['nom'] . ' (' . $nomVarianteActuel . ')',
+                        'quantite_demandee' => $qteHistorique,
+                        'quantite_ajoutee'  => $qteAjoutee,
+                    ];
+                }
+
+                if (abs($prixActuel - $prixUnitaireHistorique) > 0.001) {
+                    $articlesPrixModifies[] = [
+                        'nom'          => (string) $prod['nom'] . ' (' . $nomVarianteActuel . ')',
+                        'ancien_prix'  => $prixUnitaireHistorique,
+                        'nouveau_prix' => $prixActuel,
+                    ];
+                }
+
+                // Récupération des options unitaires composant cette variante
+                $stmtOptValues->execute(['vid' => $varianteIdActuel]);
+                $optRows = $stmtOptValues->fetchAll();
+                $optionsList = [];
+                for ($k = 0, $nbOpts = count($optRows); $k < $nbOpts; $k++) {
+                    $oRow = $optRows[$k];
+                    $optionsList[] = [
+                        'optionId'  => (int) $oRow['optionId'],
+                        'optionNom' => (string) $oRow['optionNom'],
+                        'valeurId'  => (int) $oRow['valeurId'],
+                        'valeurNom' => (string) $oRow['valeurNom'],
+                        'surcout'   => (float) $oRow['surcout'],
+                    ];
+                }
+
+                $articlesAAjouter[] = [
+                    'produit' => [
+                        'id'        => $prodId,
+                        'nom'       => (string) $prod['nom'],
+                        'prix'      => (float) $prod['prix'],
+                        'stock'     => (int) $prod['stock'],
+                        'image_url' => $imageUrl,
+                        'slug'      => (string) ($prod['slug'] ?? $prodId),
+                    ],
+                    'quantite' => $qteAjoutee,
+                    'variante' => [
+                        'id'    => $varianteIdActuel,
+                        'nom'   => $nomVarianteActuel,
+                        'prix'  => $prixActuel,
+                        'stock' => $stockDispo,
+                    ],
+                    'options'      => $optionsList,
+                    'prix_actuel'  => $prixActuel,
+                    'prix_ancien'  => $prixUnitaireHistorique,
+                    'prix_modifie' => abs($prixActuel - $prixUnitaireHistorique) > 0.001,
+                ];
+            } else {
+                // Produit simple sans variante
+                $stockDispo = (int) $prod['stock'];
+                $prixActuel = (float) $prod['prix'];
+
+                if ($stockDispo <= 0) {
+                    $articlesIndisponibles[] = [
+                        'nom_produit'  => (string) $prod['nom'],
+                        'nom_variante' => null,
+                        'quantite'     => $qteHistorique,
+                        'motif'        => 'Rupture de stock.',
+                    ];
+                    continue;
+                }
+
+                $qteAjoutee = min($qteHistorique, $stockDispo);
+                if ($qteAjoutee < $qteHistorique) {
+                    $articlesAjustes[] = [
+                        'nom'               => (string) $prod['nom'],
+                        'quantite_demandee' => $qteHistorique,
+                        'quantite_ajoutee'  => $qteAjoutee,
+                    ];
+                }
+
+                if (abs($prixActuel - $prixUnitaireHistorique) > 0.001) {
+                    $articlesPrixModifies[] = [
+                        'nom'          => (string) $prod['nom'],
+                        'ancien_prix'  => $prixUnitaireHistorique,
+                        'nouveau_prix' => $prixActuel,
+                    ];
+                }
+
+                $articlesAAjouter[] = [
+                    'produit' => [
+                        'id'        => $prodId,
+                        'nom'       => (string) $prod['nom'],
+                        'prix'      => $prixActuel,
+                        'stock'     => $stockDispo,
+                        'image_url' => $imageUrl,
+                        'slug'      => (string) ($prod['slug'] ?? $prodId),
+                    ],
+                    'quantite'     => $qteAjoutee,
+                    'variante'     => null,
+                    'options'      => [],
+                    'prix_actuel'  => $prixActuel,
+                    'prix_ancien'  => $prixUnitaireHistorique,
+                    'prix_modifie' => abs($prixActuel - $prixUnitaireHistorique) > 0.001,
+                ];
+            }
+        }
+
+        return [
+            'succes'                 => true,
+            'commande_id'            => $cmdId,
+            'numero_commande'        => $numCommande,
+            'articles_a_ajouter'     => $articlesAAjouter,
+            'articles_indisponibles' => $articlesIndisponibles,
+            'articles_ajustes'       => $articlesAjustes,
+            'articles_prix_modifies' => $articlesPrixModifies,
+        ];
+    }
 }

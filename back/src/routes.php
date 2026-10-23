@@ -27,6 +27,7 @@ return [
 
     // Commandes (Clients connectés)
     'POST /api/orders'         => [OrderController::class,     'creer'],
+    'POST /api/orders/reorder' => [OrderController::class,     'reorder'],
     'GET  /api/orders'         => [OrderController::class,     'listerMesCommandes'],
     'GET  /api/orders/detail'  => [OrderController::class,     'detail'],
 
