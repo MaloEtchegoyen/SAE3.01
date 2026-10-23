@@ -143,6 +143,91 @@ let CartData = {
   },
 
   /**
+   * Modifie les options ou la variante d'un article existant dans le panier.
+   * Si la nouvelle combinaison correspond à un autre article déjà présent, fusionne les lignes.
+   *
+   * @param {string} ancienneCle
+   * @param {{
+   *   produit: object,
+   *   variante?: object|null,
+   *   options?: Array<{ optionId: number, optionNom: string, valeurId: number, valeurNom: string, surcout: number }>
+   * }} params
+   * @returns {Array<object>} Le nouveau panier
+   */
+  modifierOptionsArticle(ancienneCle, { produit, variante = null, options = [] }) {
+    if (!ancienneCle || !produit?.id) return lireStockage();
+
+    let articles = lireStockage();
+    let indexArticle = articles.findIndex((item) => item.cle === ancienneCle);
+    if (indexArticle === -1) return articles;
+
+    let articleCourant = articles[indexArticle];
+
+    // Construction d'une clé d'unicité tenant compte des options ou de la variante
+    let nouvelleCle = `${produit.id}_base`;
+    let surcoutOptions = 0;
+    let nomOptions = null;
+
+    if (variante?.id) {
+      nouvelleCle = `${produit.id}_var_${variante.id}`;
+      nomOptions = variante.nom ? String(variante.nom) : null;
+    } else if (Array.isArray(options) && options.length > 0) {
+      let idsOptions = options
+        .map((o) => `${o.optionId}:${o.valeurId}`)
+        .sort()
+        .join("_");
+      nouvelleCle = `${produit.id}_opt_${idsOptions}`;
+      nomOptions = options.map((o) => o.valeurNom).join(", ");
+      options.forEach((o) => {
+        surcoutOptions += Number(o.surcout || 0);
+      });
+    }
+
+    let prixFinal = Number(
+      variante?.prix !== undefined
+        ? Number(variante.prix)
+        : roundPrix(Number(produit.prix ?? 0) + surcoutOptions)
+    );
+    let stock = Number(
+      variante?.stock !== undefined ? Number(variante.stock) : Number(produit.stock ?? 99)
+    );
+    let stockMax = stock > 0 ? stock : 0;
+    let libelleVariante = nomOptions || (variante?.nom ? String(variante.nom) : null);
+
+    if (nouvelleCle === ancienneCle) {
+      // Même clé : simple mise à jour des métadonnées
+      articleCourant.prix = prixFinal;
+      articleCourant.stockMax = stockMax;
+      articleCourant.quantite = stockMax > 0 ? Math.min(articleCourant.quantite, stockMax) : articleCourant.quantite;
+      articleCourant.nomVariante = libelleVariante;
+      articleCourant.options = Array.isArray(options) ? options : [];
+      articleCourant.varianteId = variante?.id ?? null;
+    } else {
+      // Nouvelle clé différente
+      let existantAutre = articles.find((item) => item.cle === nouvelleCle);
+      if (existantAutre) {
+        // Fusionner avec la ligne existante et retirer l'ancienne
+        let qteCombinee = existantAutre.quantite + articleCourant.quantite;
+        existantAutre.stockMax = stockMax;
+        existantAutre.quantite = stockMax > 0 ? Math.min(qteCombinee, stockMax) : qteCombinee;
+        articles.splice(indexArticle, 1);
+      } else {
+        // Remplacement de la ligne sur place
+        articleCourant.cle = nouvelleCle;
+        articleCourant.varianteId = variante?.id ?? null;
+        articleCourant.options = Array.isArray(options) ? options : [];
+        articleCourant.nomVariante = libelleVariante;
+        articleCourant.prix = prixFinal;
+        articleCourant.stockMax = stockMax;
+        articleCourant.quantite = stockMax > 0 ? Math.min(articleCourant.quantite, stockMax) : articleCourant.quantite;
+      }
+    }
+
+    ecrireStockage(articles);
+    return articles;
+  },
+
+  /**
    * Modifie la quantité d'un article du panier repéré par sa clé unique.
    * Si la quantité demandée est <= 0, l'article est supprimé.
    *
