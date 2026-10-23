@@ -216,40 +216,109 @@ C.selectionnerCommande = function (commandeId) {
 };
 
 /**
- * Remet les articles d'une commande dans le panier courant.
+ * Remet les articles d'une commande dans le panier courant après vérification
+ * en temps réel de leur disponibilité, stocks et prix via le backend.
  *
  * @param {object} commande
  */
-C.commanderANouveau = function (commande) {
-  if (!commande || !Array.isArray(commande.lignes) || commande.lignes.length === 0) {
+C.commanderANouveau = async function (commande) {
+  if (M.enCoursDeTraitement) return;
+  if (!commande || (!commande.id && !commande.numero_commande)) {
     return;
   }
 
-  for (let i = 0, nb = commande.lignes.length; i < nb; i++) {
-    let ligne = commande.lignes[i];
-    CartData.ajouterArticle({
-      produit: {
-        id: ligne.product_id,
-        nom: ligne.nom_produit,
-        prix: ligne.prix_unitaire,
-        image_url: ligne.image_url,
-      },
-      quantite: ligne.quantite,
-      variante: ligne.variant_id
-        ? {
-            id: ligne.variant_id,
-            nom: ligne.nom_variante,
-            prix: ligne.prix_unitaire,
-          }
-        : null,
-    });
-  }
-
-  M.message = {
-    type: "succes",
-    texte: `Les articles de la commande ${commande.numero_commande} ont été réajoutés à votre panier.`,
-  };
+  M.enCoursDeTraitement = true;
+  M.message = null;
   V.rafraichir();
+
+  try {
+    let identifiant = commande.id || commande.numero_commande;
+    let resultat = await OrderData.preparerRecommande(identifiant);
+
+    if (!resultat || !resultat.succes) {
+      throw new Error("Impossible de vérifier la disponibilité de cette commande.");
+    }
+
+    let articlesAAjouter = Array.isArray(resultat.articles_a_ajouter) ? resultat.articles_a_ajouter : [];
+    let indisponibles = Array.isArray(resultat.articles_indisponibles) ? resultat.articles_indisponibles : [];
+    let ajustes = Array.isArray(resultat.articles_ajustes) ? resultat.articles_ajustes : [];
+    let prixModifies = Array.isArray(resultat.articles_prix_modifies) ? resultat.articles_prix_modifies : [];
+
+    // Ajout des articles disponibles au panier avec leurs données fraîches
+    for (let i = 0, nb = articlesAAjouter.length; i < nb; i++) {
+      let item = articlesAAjouter[i];
+      CartData.ajouterArticle({
+        produit: item.produit,
+        quantite: item.quantite,
+        variante: item.variante,
+        options: item.options || [],
+      });
+    }
+
+    // Construction du message d'information ou d'avertissement
+    if (articlesAAjouter.length === 0) {
+      let motif =
+        indisponibles.length > 0
+          ? indisponibles
+              .map(
+                (a) =>
+                  `${a.nom_produit}${a.nom_variante ? ` (${a.nom_variante})` : ""} : ${a.motif}`
+              )
+              .join(" ; ")
+          : "Tous les articles sont en rupture de stock ou retirés du catalogue.";
+      M.message = {
+        type: "erreur",
+        texte: `Aucun article n'a pu être réajouté au panier. ${motif}`,
+      };
+    } else {
+      let alertes = [];
+
+      if (indisponibles.length > 0) {
+        let nomsIndispo = indisponibles
+          .map(
+            (a) =>
+              `${a.nom_produit}${a.nom_variante ? ` (${a.nom_variante})` : ""}`
+          )
+          .join(", ");
+        alertes.push(`Articles indisponibles non ajoutés : ${nomsIndispo}.`);
+      }
+
+      if (ajustes.length > 0) {
+        let detailsAjustes = ajustes
+          .map((a) => `${a.nom} (quantité réduite à ${a.quantite_ajoutee})`)
+          .join(", ");
+        alertes.push(`Quantités réajustées selon le stock : ${detailsAjustes}.`);
+      }
+
+      if (prixModifies.length > 0) {
+        let detailsPrix = prixModifies
+          .map(
+            (p) =>
+              `${p.nom} (${formaterPrix(p.ancien_prix)} → ${formaterPrix(p.nouveau_prix)})`
+          )
+          .join(", ");
+        alertes.push(`Tarifs réactualisés : ${detailsPrix}.`);
+      }
+
+      let texteFinal = `Les articles disponibles de la commande ${resultat.numero_commande || commande.numero_commande} ont été réajoutés à votre panier.`;
+      if (alertes.length > 0) {
+        texteFinal += ` Note : ${alertes.join(" ")}`;
+      }
+
+      M.message = {
+        type: alertes.length > 0 ? "info" : "succes",
+        texte: texteFinal,
+      };
+    }
+  } catch (erreur) {
+    M.message = {
+      type: "erreur",
+      texte: erreur.message || "Erreur lors de la préparation de la commande.",
+    };
+  } finally {
+    M.enCoursDeTraitement = false;
+    V.rafraichir();
+  }
 };
 
 /**
@@ -729,6 +798,11 @@ V.createPageFragment = function () {
           '[data-action="commander-a-nouveau"]'
         );
         if (btnCommanderANouveau) {
+          if (M.enCoursDeTraitement) {
+            btnCommanderANouveau.disabled = true;
+            btnCommanderANouveau.classList.add("opacity-50", "cursor-not-allowed");
+            btnCommanderANouveau.textContent = "Vérification en cours...";
+          }
           btnCommanderANouveau.addEventListener("click", () => {
             C.commanderANouveau(cmdSelectionnee);
           });
