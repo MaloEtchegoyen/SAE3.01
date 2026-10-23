@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : ven. 23 oct. 2026 à 14:17
+-- Généré le : ven. 23 oct. 2026 à 17:04
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.27
 
@@ -31,7 +31,7 @@ CREATE TABLE `category` (
   `id` int(11) NOT NULL,
   `nom` varchar(255) NOT NULL,
   `description` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `category`
@@ -134,7 +134,7 @@ CREATE TABLE `product` (
   `description` text DEFAULT NULL,
   `actif` tinyint(1) NOT NULL DEFAULT 1,
   `date_modification` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `product`
