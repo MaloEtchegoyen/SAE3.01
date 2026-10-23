@@ -189,18 +189,31 @@ final class StatsModel
                             AND p.actif = 1
                             AND pv.stock <= pv.seuil_alerte';
 
-        $sql = "({$sqlSimples}) UNION ALL ({$sqlVariantes}) ORDER BY stock ASC, nom ASC";
-        $lignes = $this->pdo->query($sql)->fetchAll();
+        $lignesSimples = $this->pdo->query($sqlSimples)->fetchAll();
+        $lignesVariantes = $this->pdo->query($sqlVariantes)->fetchAll();
 
         $resultat = [];
-        for ($i = 0, $nb = count($lignes); $i < $nb; $i++) {
-            $row = $lignes[$i];
+        for ($i = 0, $nb = count($lignesSimples); $i < $nb; $i++) {
+            $row = $lignesSimples[$i];
             $resultat[] = [
                 'nom'   => (string) $row['nom'],
                 'stock' => max(0, (int) $row['stock']),
                 'seuil' => (int) $row['seuil'],
             ];
         }
+
+        for ($i = 0, $nb = count($lignesVariantes); $i < $nb; $i++) {
+            $row = $lignesVariantes[$i];
+            $resultat[] = [
+                'nom'   => (string) $row['nom'],
+                'stock' => max(0, (int) $row['stock']),
+                'seuil' => (int) $row['seuil'],
+            ];
+        }
+
+        usort($resultat, static function (array $a, array $b): int {
+            return ($a['stock'] <=> $b['stock']) ?: strcasecmp($a['nom'], $b['nom']);
+        });
 
         return $resultat;
     }
