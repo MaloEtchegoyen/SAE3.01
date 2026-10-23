@@ -187,15 +187,13 @@ let FicheProduitView = {
 
     // Sélecteur de quantité & Stock
     let valQuantite = fragment.querySelector('[data-ref="valeur-quantite"]');
+    let selecteurQuantite = fragment.querySelector('[data-ref="selecteur-quantite"]');
+    let labelQuantite = fragment.querySelector('[data-ref="label-quantite"]');
     let btnDiminuer = fragment.querySelector('[data-action="diminuer-quantite"]');
     let btnAugmenter = fragment.querySelector('[data-action="augmenter-quantite"]');
     let spanStock = fragment.querySelector('[data-ref="stock-restant"]');
     let btnAjouter = fragment.querySelector('[data-action="ajouter-panier"]');
     let txtBouton = fragment.querySelector('[data-ref="texte-bouton-panier"]');
-
-    if (valQuantite) {
-      valQuantite.textContent = String(quantite);
-    }
 
     // Affichage des stocks par variante (STK-b / OPT-b)
     if (spanStock) {
@@ -214,23 +212,37 @@ let FicheProduitView = {
       }
     }
 
-    // Contraintes de quantité (STK-c / OPT-b)
-    if (btnDiminuer) {
-      btnDiminuer.disabled = quantite <= 1 || estEpuise || combinaisonInexistante;
-      btnDiminuer.addEventListener("click", () => {
-        if (quantite > 1) {
-          actions?.onChangerQuantite?.(quantite - 1);
-        }
-      });
-    }
+    // Si le produit ou la variante est en rupture de stock, ne pas afficher le sélecteur de quantité
+    if (estEpuise || combinaisonInexistante) {
+      if (selecteurQuantite) {
+        selecteurQuantite.remove();
+      }
+      if (labelQuantite) {
+        labelQuantite.textContent = "Disponibilité";
+      }
+    } else {
+      if (valQuantite) {
+        valQuantite.textContent = String(quantite);
+      }
 
-    if (btnAugmenter) {
-      btnAugmenter.disabled = quantite >= stockDisponible || estEpuise || combinaisonInexistante;
-      btnAugmenter.addEventListener("click", () => {
-        if (quantite < stockDisponible) {
-          actions?.onChangerQuantite?.(quantite + 1);
-        }
-      });
+      // Contraintes de quantité (STK-c / OPT-b)
+      if (btnDiminuer) {
+        btnDiminuer.disabled = quantite <= 1;
+        btnDiminuer.addEventListener("click", () => {
+          if (quantite > 1) {
+            actions?.onChangerQuantite?.(quantite - 1);
+          }
+        });
+      }
+
+      if (btnAugmenter) {
+        btnAugmenter.disabled = quantite >= stockDisponible;
+        btnAugmenter.addEventListener("click", () => {
+          if (quantite < stockDisponible) {
+            actions?.onChangerQuantite?.(quantite + 1);
+          }
+        });
+      }
     }
 
     // Bouton d'ajout au panier

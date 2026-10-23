@@ -36,10 +36,10 @@
 
   <!-- Sélecteur de Quantité & Bouton Ajouter au panier -->
   <div class="flex flex-col gap-4 border-t border-border pt-5 sm:pt-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <span class="text-body-sm font-semibold">Quantité</span>
+    <div data-ref="ligne-quantite" class="flex flex-wrap items-center justify-between gap-3">
+      <span data-ref="label-quantite" class="text-body-sm font-semibold">Quantité</span>
       <div class="flex items-center gap-3">
-        <div class="flex items-center rounded-xl border border-border bg-subtle p-1 shadow-2xs">
+        <div data-ref="selecteur-quantite" class="flex items-center rounded-xl border border-border bg-subtle p-1 shadow-2xs">
           <button
             type="button"
             data-action="diminuer-quantite"
