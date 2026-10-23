@@ -1,25 +1,37 @@
-﻿<section class="mb-6 rounded-lg bg-accent text-default border border-border p-6 shadow-xs dark:border-zinc-800">
-  <h2 class="mb-5 text-body font-semibold tracking-tight">Connexion administrateur</h2>
+<section class="rounded-2xl bg-accent p-6 sm:p-8 shadow-sm">
+  <h2 class="mb-6 text-2xl sm:text-title-md font-bold text-white tracking-tight">Connexion administrateur</h2>
 
   <form class="flex flex-col gap-4">
-    <label class="flex flex-col gap-2 text-body-sm font-medium">
+    <label class="flex flex-col gap-2 text-sm font-medium text-white">
       Email administrateur
-      <input name="login" type="text" autocomplete="username" value="{{login}}" placeholder="exemple@gmail.com" class="h-9 border-none rounded-md border bg-input px-3 font-normal transition-colors hover:border-input-hover" />
+      <input
+        name="login"
+        type="text"
+        autocomplete="username"
+        value="{{login}}"
+        placeholder="exemple@gmail.com"
+        class="h-12 w-full rounded-lg border-none bg-input px-4 text-sm font-normal text-white placeholder-white/70 outline-none transition-colors hover:bg-input-hover focus:ring-2 focus:ring-white/40"
+      />
     </label>
 
-    <label class="flex flex-col gap-2 text-body-sm font-medium">
+    <label class="flex flex-col gap-2 text-sm font-medium text-white">
       Mot de passe
-      <input name="mdp" type="password" autocomplete="current-password" placeholder="******" class="h-9 border-none rounded-md border border-border bg-input px-3 font-normal transition-colors hover:border-border" />
+      <input
+        name="mdp"
+        type="password"
+        autocomplete="current-password"
+        placeholder="•••••"
+        class="h-12 w-full rounded-lg border-none bg-input px-4 text-sm font-normal text-white placeholder-white/70 outline-none transition-colors hover:bg-input-hover focus:ring-2 focus:ring-white/40"
+      />
     </label>
 
-    <div class="flex flex-wrap gap-3">
-      <button type="submit" class="h-9 rounded-md bg-input px-4 text-body-sm font-medium text-zinc-50 transition-opacity hover:opacity-90 dark:bg-zinc-50">
-        Accéder au back-office
-      </button>
-      <!-- type « button » et non « submit » : ce bouton n'envoie pas le formulaire. -->
-      <button type="button" data-action="deconnexion" class="h-9 rounded-md border border-border px-4 text-body-sm font-medium transition-colors hover:bg-input-hover">
-        Se déconnecter
-      </button>
-    </div>
+    <slot name="message"></slot>
+
+    <button
+      type="submit"
+      class="mt-1 h-12 w-full rounded-lg bg-input px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
+    >
+      Accéder au back-office
+    </button>
   </form>
 </section>

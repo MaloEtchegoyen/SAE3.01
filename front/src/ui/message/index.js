@@ -8,6 +8,7 @@ const COULEURS = {
   succes: "border-green-700 text-green-700 dark:border-green-400 dark:text-green-400",
   avertissement: "border-amber-600 text-amber-700 dark:border-amber-400 dark:text-amber-400",
   info: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-400",
+  "admin-erreur": "!mb-0 bg-brand text-white border-white/20 rounded-lg shadow-xs",
 };
 
 // Message d'information ou d'erreur. data vaut { type: "erreur" | "succes",

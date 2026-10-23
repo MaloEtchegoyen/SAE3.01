@@ -1282,4 +1282,12 @@ final class OrderModel
             'articles_prix_modifies' => $articlesPrixModifies,
         ];
     }
+
+    /**
+     * Retourne le nombre total de commandes enregistrées dans la base.
+     */
+    public function compterTotal(): int
+    {
+        return (int) $this->pdo->query('SELECT COUNT(*) FROM commande')->fetchColumn();
+    }
 }

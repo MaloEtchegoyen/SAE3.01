@@ -11,7 +11,7 @@ let FormulaireConnexionAdminView = {
   /**
    * @param {{login: string}} data  Identifiant à pré-remplir.
    * @param {{surConnexion: (login: string, mdp: string) => void,
-   *          surDeconnexion: () => void}} actions
+   *          surDeconnexion?: () => void}} actions
    */
   dom: function (data, actions) {
     let fragment = htmlToFragment(FormulaireConnexionAdminView.html(data));
@@ -24,9 +24,10 @@ let FormulaireConnexionAdminView = {
       actions.surConnexion(formulaire.elements.login.value.trim(), formulaire.elements.mdp.value);
     });
 
-    fragment
-      .querySelector('[data-action="deconnexion"]')
-      .addEventListener("click", () => actions.surDeconnexion());
+    let boutonDeconnexion = fragment.querySelector('[data-action="deconnexion"]');
+    if (boutonDeconnexion && actions.surDeconnexion) {
+      boutonDeconnexion.addEventListener("click", () => actions.surDeconnexion());
+    }
 
     return fragment;
   },
