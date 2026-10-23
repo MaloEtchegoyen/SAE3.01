@@ -3,7 +3,7 @@ import template from "./template.html?raw";
 
 let StatistiquesView = {
   /**
-   * @param {{ totalProduits: number, totalCategories: number }} stats
+   * @param {{ totalProduits: number, totalCategories: number, totalCommandes: number }} stats
    * @param {{ onGererProduits?: () => void }} [actions]
    */
   dom: function (stats, actions = {}) {
@@ -11,11 +11,12 @@ let StatistiquesView = {
       genericRenderer(template, {
         totalProduits: stats.totalProduits ?? 0,
         totalCategories: stats.totalCategories ?? 0,
+        totalCommandes: stats.totalCommandes ?? 0,
       })
     );
 
     if (actions.onGererProduits) {
-      let bouton = fragment.querySelector("a[data-link]");
+      let bouton = fragment.querySelector('a[href="/admin/produits"][data-link]');
       if (bouton) {
         bouton.addEventListener("click", (e) => {
           e.preventDefault();

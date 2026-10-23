@@ -26,7 +26,10 @@ C.handler_connexion = async function (login, mdp) {
     await AuthData.login(login, mdp);
     navigate("/admin");
   } catch (erreur) {
-    M.message = { type: "erreur", texte: erreur.message };
+    M.message = {
+      type: "admin-erreur",
+      texte: "Identifiants administrateur incorrects. Réessayez.",
+    };
     V.rafraichir();
   }
 };
@@ -36,7 +39,10 @@ C.handler_deconnexion = async function () {
     await AuthData.logout();
     M.message = { type: "succes", texte: "Déconnexion réussie." };
   } catch (erreur) {
-    M.message = { type: "erreur", texte: erreur.message };
+    M.message = {
+      type: "admin-erreur",
+      texte: erreur.message || "Erreur lors de la déconnexion.",
+    };
   }
 
   V.rafraichir();
@@ -67,14 +73,21 @@ V.rafraichir = function () {
 V.createPageFragment = function () {
   let pageFragment = htmlToFragment(template);
 
-  pageFragment.querySelector('slot[name="connexion"]').replaceWith(
-    FormulaireConnexionAdminView.dom(
-      { login: M.login },
-      { surConnexion: C.handler_connexion, surDeconnexion: C.handler_deconnexion }
-    )
+  let formulaireNode = FormulaireConnexionAdminView.dom(
+    { login: M.login },
+    { surConnexion: C.handler_connexion, surDeconnexion: C.handler_deconnexion }
   );
 
-  pageFragment.querySelector('slot[name="message"]').replaceWith(MessageView.dom(M.message));
+  let slotMessage = formulaireNode.querySelector('slot[name="message"]');
+  if (slotMessage) {
+    if (M.message) {
+      slotMessage.replaceWith(MessageView.dom(M.message));
+    } else {
+      slotMessage.remove();
+    }
+  }
+
+  pageFragment.querySelector('slot[name="connexion"]').replaceWith(formulaireNode);
 
   return pageFragment;
 };
@@ -87,4 +100,3 @@ V.createPageFragment = function () {
 export function ConnexionAdminPage() {
   return C.init();
 }
-

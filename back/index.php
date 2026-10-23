@@ -66,7 +66,7 @@ try {
     // le contrôleur reçoit le modèle. Aucune magie, tout est lisible ici.
     $controleurs = [
         AuthController::class      => new AuthController(new UserModel($pdo)),
-        StatsController::class     => new StatsController(new ProductModel($pdo)),
+        StatsController::class     => new StatsController(new ProductModel($pdo), new OrderModel($pdo)),
         ProductController::class   => new ProductController(new ProductModel($pdo)),
         OrderController::class     => new OrderController(new OrderModel($pdo)),
         CategoryController::class  => new CategoryController(new CategoryModel($pdo)),

@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\Response;
+use App\Model\OrderModel;
 use App\Model\ProductModel;
 
 /**
- * Statistiques du catalogue, réservées aux administrateurs.
+ * Statistiques d'administration, réservées aux administrateurs.
  */
 final class StatsController
 {
-    /** Le modèle qui interroge la base, fourni à la construction. */
+    /** Le modèle qui interroge la base pour les produits. */
     private ProductModel $produits;
 
-    public function __construct(ProductModel $produits)
+    /** Le modèle qui interroge la base pour les commandes. */
+    private ?OrderModel $commandes;
+
+    public function __construct(ProductModel $produits, ?OrderModel $commandes = null)
     {
         $this->produits = $produits;
+        $this->commandes = $commandes;
     }
 
     /**
@@ -30,6 +35,9 @@ final class StatsController
             Response::erreur('Accès réservé aux administrateurs', 403);
         }
 
-        Response::json($this->produits->statistiques());
+        $stats = $this->produits->statistiques();
+        $stats['totalCommandes'] = $this->commandes !== null ? $this->commandes->compterTotal() : 0;
+
+        Response::json($stats);
     }
 }
